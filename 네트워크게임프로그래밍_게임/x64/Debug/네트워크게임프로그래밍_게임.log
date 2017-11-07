@@ -1,4 +1,2 @@
-﻿  Framework.cpp
-c:\users\sju42\documents\visual studio 2017\projects\네트워크게임프로그래밍_게임\네트워크게임프로그래밍_게임\object.h(169): warning C4244: '인수': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  네트워크게임프로그래밍_게임.vcxproj -> C:\Users\sju42\documents\visual studio 2017\Projects\네트워크게임프로그래밍_게임\x64\Debug\네트워크게임프로그래밍_게임.exe
-  네트워크게임프로그래밍_게임.vcxproj -> C:\Users\sju42\documents\visual studio 2017\Projects\네트워크게임프로그래밍_게임\x64\Debug\네트워크게임프로그래밍_게임.pdb (Partial PDB)
+﻿  네트워크게임프로그래밍_게임.vcxproj -> C:\Users\sju42\Documents\2017_NGP\x64\Debug\네트워크게임프로그래밍_게임.exe
+  네트워크게임프로그래밍_게임.vcxproj -> C:\Users\sju42\Documents\2017_NGP\x64\Debug\네트워크게임프로그래밍_게임.pdb (Partial PDB)
