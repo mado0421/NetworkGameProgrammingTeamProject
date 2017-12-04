@@ -13,7 +13,8 @@ class ServerFrameWork
 	static HANDLE hGameThread[MAXROOMCOUNT];
 	static HANDLE hCommunicated[MAXROOMCOUNT][MAX_PLAYER];
 	static HANDLE hSendPacket[MAXROOMCOUNT][MAX_PLAYER];
-
+	// For Test... GameThread 동기화 필요성 있음
+	static HANDLE hroom[2];
 	static bool Communicated[MAXROOMCOUNT][MAX_PLAYER];
 
 	HANDLE hTread[2];

@@ -66,6 +66,12 @@ struct InfoTeam {
 	InfoBullet m_bullets[MAX_BULLET];
 };
 
+bool inline IsZero(float a) {
+	if (abs(a) < FLT_EPSILON)
+		return true;
+	else 
+		return false;
+}
 struct Room
 {
 	///////////////////////////////////////////////
@@ -95,7 +101,7 @@ struct Room
 		m_ElapsedTime += chrono::duration_cast<chrono::milliseconds>(m_clock - m_past).count()*0.001f;
 		m_past = m_clock;
 		//printf("Tick = %f\n", m_ElapsedTime);
-		Sleep(1);
+		Sleep(10);
 	};
 	void timeInit() {
 		m_past = chrono::system_clock::now();

@@ -2,7 +2,7 @@
 #include "ServerFrameWork.h"
 
 
-extern int ats;
+//extern int ats;
 //extern Room room[MAXROOMCOUNT];
 
 //Á¤ÀÇ?
@@ -10,51 +10,19 @@ Room ServerFrameWork::room[MAXROOMCOUNT];
 bool ServerFrameWork::Communicated[MAXROOMCOUNT][MAX_PLAYER];
 HANDLE ServerFrameWork::hCommunicated[MAXROOMCOUNT][MAX_PLAYER];
 HANDLE ServerFrameWork::hSendPacket[MAXROOMCOUNT][MAX_PLAYER];
-
+HANDLE ServerFrameWork::hroom[2];
 ServerFrameWork::ServerFrameWork()
 {
+	ZeroMemory(room, sizeof(Room)*MAXROOMCOUNT);
+	hroom[0] = CreateEvent(NULL, FALSE, TRUE, NULL);
+	hroom[1] = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
 ServerFrameWork::~ServerFrameWork()
 {
 }
 
-void ServerFrameWork::test()
-{
-	int roomNumber = 0;
-	HANDLE hHandle;
 
-	hHandle=CreateThread(NULL, 0, GameThread, (LPVOID)roomNumber, 0, NULL);
-	room[roomNumber].m_clock = chrono::system_clock::now();
-
-	WaitForSingleObject(hHandle, INFINITE);
-}
-
-void ServerFrameWork::testInit()
-{
-	for (int i = 0; i < MAXROOMCOUNT; ++i)
-	{
-		room[i].m_roomID = i;
-	}
-}
-
-DWORD ServerFrameWork::GameThreadtest(LPVOID arg)
-{
-	argument* ar = (argument*)arg;
-	while (true) {
-		//printf("thread %d  %d\n", ar->number, ar->member);
-		ar->member++;
-		if (ar->member >= 100)
-			ExitThread(0);
-		printf("room[%d] id = %d\n",ar->member, room[ar->member].m_roomID);
-		Sleep(0);
-	}
-	return 0;
-}
-
-void ServerFrameWork::test_ReceivePacketFromClient(int roomNum, int PlayerID)
-{
-}
 
 void ServerFrameWork::SetSocket(int RoomNumber, int PlayerId,SOCKET socket)
 {
@@ -86,19 +54,12 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 	int RoomNumber = (int)arg;
 	DWORD retEvent;
 	while (true) {
-		if (cnt++ >= 10000)
+		WaitForSingleObject(hroom[RoomNumber], INFINITE);
+		if (cnt++ >= 1000)
 		{
 			break;
 		}
 		::printf("\n cnt = %d\n", cnt);
-		//printf("GameThreadCall RoomNumber %d\n", RoomNumber);
-		/*for (int i = 0; i < MAX_PLAYER; ++i) {
-			while (true) {
-				if (!Communicated[RoomNumber][i])
-					Sleep(0);
-				else break;
-			}
-		}*/
 	
 		retEvent = WaitForMultipleObjects(MAX_PLAYER, hCommunicated[RoomNumber], TRUE, INFINITE);
 		if (retEvent != WAIT_OBJECT_0)break;
@@ -106,7 +67,7 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 		//	Need Room TimeCheckout
 		while (true) {
 			room[RoomNumber].Tick();
-			if (room[RoomNumber].m_ElapsedTime < THREADFREQ)
+			if (THREADFREQ > room[RoomNumber].m_ElapsedTime)
 				Sleep(0);
 			else {
 				room[RoomNumber].m_ElapsedTime = 0;
@@ -150,6 +111,8 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 		}*/
 		for(int i=0;i<MAX_PLAYER;++i)
 			SetEvent(hSendPacket[RoomNumber][i]);
+
+		SetEvent(hroom[RoomNumber == 1 ? 0 : 1]);
 	}
 	//	Set Next Thread's Event
 	return 0;
@@ -182,7 +145,7 @@ DWORD ServerFrameWork::CommunicationPlayer(LPVOID arg)
 		SetEvent(hCommunicated[index_r][index_p]);
 		if (index_p - 1 > 0)
 			SetEvent(hSendPacket[index_r][index_p - 1]);
-		if (cnt >= 10000)break;
+		if (cnt >= 1000)break;
 	}
 	return 0;
 }

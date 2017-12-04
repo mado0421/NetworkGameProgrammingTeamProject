@@ -31,22 +31,6 @@ void err_display(char *msg)
 	LocalFree(lpMsgBuf);
 }
 
-int ats = 0;
-//Room room[MAXROOMCOUNT];
-
-// arg is Room Id
-//DWORD WINAPI GameThread(LPVOID arg)
-//{
-//	// MainGame
-//
-//	// Room[arg].Info
-//
-//	// Calc
-//
-//	// Send to Player 4
-//	return 0;
-//}
-
 ServerFrameWork g_server;
 #define SERVERPORT 9000
 int main()
@@ -82,7 +66,8 @@ int main()
 	Room_Player p;
 	p.roomNum = 0;
 	HANDLE hHandle[5];
-	int i = 0;
+	HANDLE hTmp;
+	//int i = 0;
 	while (true) {
 		g_server.InitRoom(p.roomNum);
 		while (true) {
@@ -102,14 +87,22 @@ int main()
 				inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 			g_server.SetSocket(p.roomNum, p.playerNum, client_sock);
 
-			hHandle[i++] = CreateThread(NULL, 0, g_server.CommunicationPlayer, (LPVOID)&p, 0, NULL);
+			hTmp = CreateThread(NULL, 0, g_server.CommunicationPlayer, (LPVOID)&p, 0, NULL);
+			CloseHandle(hTmp);
 
 		}
-		hHandle[i++] = CreateThread(NULL, 0, g_server.GameThread, (LPVOID)p.roomNum, 0, NULL);
+		hTmp = CreateThread(NULL, 0, g_server.GameThread, (LPVOID)p.roomNum, 0, NULL);
+		CloseHandle(hTmp);
+
 		g_server.GameStart(p.roomNum);
-		break;
+
+		p.roomNum++;
+		cnt = 4;
+		if (p.roomNum >= MAXROOMCOUNT)
+			break;
+		//break;
 	}
-	WaitForMultipleObjects(5, hHandle, true, INFINITE);
+	//WaitForMultipleObjects(5, hHandle, true, INFINITE);
 	
 	printf("exit\n");
 
