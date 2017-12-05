@@ -16,16 +16,16 @@
 #include<stdio.h>
 #include<math.h>
 #include<chrono>
+#include<queue>
 using namespace std;
 //Room 구조체 전역변수 예정
 
 #define MAX_BULLET 18
 #define MAX_PLAYER 4
-#define PUBLIC_EVENT MAX_PLAYER
 #define MAX_ITEM 3
 
 #define MAXROOMCOUNT	100
-#define THREADFREQ	0.016f
+#define THREADFREQ	3.0f
 
 struct Vector2D
 {
@@ -73,7 +73,9 @@ bool inline IsZero(float a) {
 	else 
 		return false;
 }
-
+enum {
+	Lobby = false, Play = true
+};
 struct Room
 {
 	///////////////////////////////////////////////

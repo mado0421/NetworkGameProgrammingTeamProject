@@ -1,29 +1,34 @@
 #include "stdafx.h"
 #include "ServerFrameWork.h"
 
-
-//extern int ats;
-//extern Room room[MAXROOMCOUNT];
-
-//정의?
+//정의
 Room ServerFrameWork::room[MAXROOMCOUNT];
-bool ServerFrameWork::Communicated[MAXROOMCOUNT][MAX_PLAYER];
+
 HANDLE ServerFrameWork::hCommunicated[MAXROOMCOUNT][MAX_PLAYER];
 HANDLE ServerFrameWork::hSendPacket[MAXROOMCOUNT][MAX_PLAYER];
 
-HANDLE ServerFrameWork::hroom[2];
+HANDLE ServerFrameWork::hGameThread[MAXROOMCOUNT];
+HANDLE ServerFrameWork::hNextThreadCall;
+std::queue<int> ServerFrameWork::m_ThreadQueue;
+
+#define TEST_THREAD_COUNT 1
+#define TEST_CNT_COUNT	10000
+int cnt = 0;
+
 ServerFrameWork::ServerFrameWork()
 {
 	ZeroMemory(room, sizeof(Room)*MAXROOMCOUNT);
-	hroom[0] = CreateEvent(NULL, FALSE, TRUE, NULL);
-	hroom[1] = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	HANDLE hTmp;
+	hTmp = CreateThread(NULL, 0, ThreadOrder, 0, 0, NULL);
+	CloseHandle(hTmp);
+
+	hNextThreadCall = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
 ServerFrameWork::~ServerFrameWork()
 {
 }
-
-
 
 void ServerFrameWork::SetSocket(int RoomNumber, int PlayerId,SOCKET socket)
 {
@@ -34,10 +39,13 @@ void ServerFrameWork::SetSocket(int RoomNumber, int PlayerId,SOCKET socket)
 void ServerFrameWork::InitRoom(int RoomNumber)
 {
 	//	Make Event
+	room[RoomNumber].m_roomState = Play;
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		hCommunicated[RoomNumber][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
 		hSendPacket[RoomNumber][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
 	}
+
+	hGameThread[RoomNumber] = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
 void ServerFrameWork::GameStart(int RoomNumber)
@@ -47,25 +55,64 @@ void ServerFrameWork::GameStart(int RoomNumber)
 		//NOTUSESLEEP
 		Sleep(1000);
 	}
-	SetEvent(hSendPacket[RoomNumber][PUBLIC_EVENT]);
-
+	m_ThreadQueue.push(RoomNumber);
+	SetEvent(hNextThreadCall);
 	room[RoomNumber].timeInit();
 }
-int cnt = 0;
+
+void ServerFrameWork::CloseRoom(int RoomNumber)
+{
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		CloseHandle(hCommunicated[RoomNumber][i]);
+		CloseHandle(hSendPacket[RoomNumber][i]);
+	}
+	CloseHandle(hGameThread[RoomNumber]);
+}
+
+DWORD ServerFrameWork::ThreadOrder(LPVOID arg)
+{
+	int index;
+	DWORD retval;
+	while (true) {
+		retval = WaitForSingleObject(hNextThreadCall, INFINITE);
+		if (retval != WAIT_OBJECT_0)break;
+
+		if (!m_ThreadQueue.empty()) 
+		{
+			index = m_ThreadQueue.front();
+			m_ThreadQueue.pop();
+
+			if (room[index].m_roomState == Play) 
+			{
+				m_ThreadQueue.push(index);
+				SetEvent(hGameThread[index]);
+			}
+			else 
+			{
+				SetEvent(hNextThreadCall);
+			}
+		}
+	}
+	return 0;
+}
+
 DWORD ServerFrameWork::GameThread(LPVOID arg)
 {
 	int RoomNumber = (int)arg;
 	DWORD retEvent;
-	while (true) {
-		WaitForSingleObject(hroom[RoomNumber], INFINITE);
-		if (cnt++ >= 1000)
-			break;
+	while (true)
+	{
+		WaitForSingleObject(hGameThread[RoomNumber], INFINITE);
+
+		//
+		if (cnt++ >= TEST_CNT_COUNT)break;
+
 		::printf("\n cnt = %d\n", cnt);
-	
+
 		retEvent = WaitForMultipleObjects(MAX_PLAYER, hCommunicated[RoomNumber], TRUE, INFINITE);
 		if (retEvent != WAIT_OBJECT_0)break;
 
-		//	Need Room TimeCheckout
+		//	Room TimeCheckout
 		while (true) {
 			room[RoomNumber].Tick();
 			if (THREADFREQ > room[RoomNumber].m_ElapsedTime)
@@ -81,14 +128,14 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 		//	{
 		//
 		//	}
-		InfoTeam team[MAX_PLAYER];
-		/*for (int i = 0; i < MAX_PLAYER; ++i) {
-			memcpy(&team[i], &room[RoomNumber].m_teamList[i], sizeof(InfoTeam));
-		}*/
-		memcpy(&team, &room[RoomNumber].m_teamList, sizeof(InfoTeam)*MAX_PLAYER);
+		
 
+		//	Set Data From Room -> Need Change
+		InfoTeam team[MAX_PLAYER];
 		InfoPlayer iPlayer[MAX_PLAYER];
 		InfoBullet iBullet[MAX_PLAYER][MAX_BULLET];
+
+		memcpy(&team, &room[RoomNumber].m_teamList, sizeof(InfoTeam)*MAX_PLAYER);
 		for (int i = 0; i < MAX_PLAYER; ++i)
 		{
 			iPlayer[i] = team[i].m_player;
@@ -96,24 +143,27 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 		}
 
 		// Calc;
-
-		S2CPacket* packet = new S2CPacket;
-		::ZeroMemory(packet, sizeof(S2CPacket));
+		//
+		//
+		//
+		//
 
 		// Set packet
-		packet->SetPacket(RoomNumber, room[RoomNumber]);
+		S2CPacket packet;
+		::ZeroMemory(&packet, sizeof(S2CPacket));
+		packet.SetPacket(RoomNumber, room[RoomNumber]);
 
-		SendPacketToClient(packet, RoomNumber);
+		//	Send
+		SendPacketToClient(&packet, RoomNumber);
 		::printf("SendPacketToClient %d \n", RoomNumber);
 
-		delete packet;
-		
+		//	For CommunicationPlayer Thread, notice ready to Communicate
 		for (int i = 0; i < MAX_PLAYER; ++i)
 			SetEvent(hSendPacket[RoomNumber][i]);
 
-		SetEvent(hroom[RoomNumber == 1 ? 0 : 1]);
+		//	Set Next Thread's
+		SetEvent(hNextThreadCall);
 	}
-	//	Set Next Thread's Event
 	return 0;
 }
 
@@ -137,7 +187,7 @@ DWORD ServerFrameWork::CommunicationPlayer(LPVOID arg)
 
 		SetEvent(hCommunicated[index_r][index_p]);
 		
-		if (cnt >= 1000)break;
+		if (cnt >= TEST_CNT_COUNT)break;
 	}
 	return 0;
 }

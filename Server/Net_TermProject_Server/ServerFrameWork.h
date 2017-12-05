@@ -10,15 +10,15 @@ struct argument {
 class ServerFrameWork
 {
 	static Room room[MAXROOMCOUNT];
-	static HANDLE hGameThread[MAXROOMCOUNT];
 	static HANDLE hCommunicated[MAXROOMCOUNT][MAX_PLAYER];
 	static HANDLE hSendPacket[MAXROOMCOUNT][MAX_PLAYER];
-	// For Test... GameThread 동기화 필요성 있음
-	static HANDLE hroom[2];
-	static bool Communicated[MAXROOMCOUNT][MAX_PLAYER];
 
-	HANDLE hTread[2];
-	argument th[2];
+	static HANDLE hGameThread[MAXROOMCOUNT];
+	static HANDLE hNextThreadCall;
+
+	static std::queue<int> m_ThreadQueue;
+
+	//static HANDLE hroom[2];
 public:
 	ServerFrameWork();
 	~ServerFrameWork();
@@ -35,30 +35,16 @@ public:	// 재욱
 		void SetSocket(int RoomNumber, int PlayerId, SOCKET socket);
 		void InitRoom(int RoomNumber);
 		void GameStart(int RoomNumber);
+		void CloseRoom(int RoomNumber);
 public:
 	//	Using in Thread Function
 	static DWORD WINAPI GameThread(LPVOID arg);
 	static DWORD WINAPI CommunicationPlayer(LPVOID arg);
+	static DWORD WINAPI ThreadOrder(LPVOID arg);
+
 	static int ReceivePacketFromClient(int roomNum,int PlayerID);
 	static void SendPacketToClient(S2CPacket* packet,int roomNum);
-public:
-	// test
-	void test();
-	void testInit();
-	static DWORD WINAPI GameThreadtest(LPVOID arg);
-	void ThreadTest()
-	{
-		th[0].number = 0;
-		th[0].member = 0;
-		th[1].number = 1;
-		th[1].member = 0;
-		hTread[0] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)this->GameThreadtest, &th[0], 0, NULL);
-		hTread[1] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)this->GameThreadtest, &th[1], 0, NULL);
-		WaitForMultipleObjects(2, hTread, TRUE, INFINITE);	
-	}
 
-	void test_ReceivePacketFromClient(int roomNum, int PlayerID);
-	void test_Commun(Room_Player);
 
 };
 
