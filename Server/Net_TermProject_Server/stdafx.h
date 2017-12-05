@@ -21,10 +21,11 @@ using namespace std;
 
 #define MAX_BULLET 18
 #define MAX_PLAYER 4
+#define PUBLIC_EVENT MAX_PLAYER
 #define MAX_ITEM 3
 
 #define MAXROOMCOUNT	100
-#define THREADFREQ	1.6f
+#define THREADFREQ	10.6f
 
 struct Vector2D
 {
@@ -72,18 +73,20 @@ bool inline IsZero(float a) {
 	else 
 		return false;
 }
+
 struct Room
 {
 	///////////////////////////////////////////////
 	// 클라이언트
 	// Room을 특정하는 고유 키
-	unsigned short m_roomID;
+	unsigned int m_roomID;
 
 	// 각 팀별로 정보를 저장하는 배열
 	InfoTeam m_teamList[MAX_PLAYER];
 
 	// 아이템 정보를 저장하는 배열
 	InfoItem m_itemList[MAX_ITEM];
+
 
 	// Room의 상태를 저장하는 변수(false: Lobby, true: Play)
 	bool m_roomState;
@@ -141,10 +144,10 @@ struct S2CPacket{	// Server to Client Packet 구조체 실제 데이터를 서버에서 보낼
 	InfoBullet iBullet[MAX_PLAYER][MAX_BULLET];
 	chrono::system_clock::time_point SendTime;
 	
-	void SetPacket(int roomNumber, Room room[MAXROOMCOUNT])
+	void SetPacket(int roomNumber, Room& room)
 	{
 		InfoTeam iTeam[MAX_PLAYER];
-		memcpy(&iTeam, &room[roomNumber].m_teamList, sizeof(InfoTeam)*MAX_PLAYER);
+		memcpy(&iTeam, &(room.m_teamList), sizeof(InfoTeam)*MAX_PLAYER);
 
 		for (int i = 0; i < MAX_PLAYER; ++i)
 		{

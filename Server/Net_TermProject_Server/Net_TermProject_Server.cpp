@@ -36,7 +36,7 @@ ServerFrameWork g_server;
 int main()
 {
 	int retval;
-	int cnt = 4;
+	int cnt = MAX_PLAYER;
 	//	윈속 초기화
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
@@ -65,7 +65,7 @@ int main()
 	int addrlen;
 	Room_Player p;
 	p.roomNum = 0;
-	HANDLE hHandle[5];
+	//HANDLE hHandle[5];
 	HANDLE hTmp;
 	//int i = 0;
 	while (true) {
@@ -80,11 +80,12 @@ int main()
 				err_display("accept()");
 				break;
 			}
-			p.playerNum = 4 - cnt--;
+			p.playerNum = MAX_PLAYER - cnt--;
 			printf("Player Number=%d\n", p.playerNum);
 			//	접속한 클라이언트 정보 출력
 			printf("\n[TCP 서버] 클라이언트 접속: IP 주소=%s, 포트 번호=%d\n",
 				inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+
 			g_server.SetSocket(p.roomNum, p.playerNum, client_sock);
 
 			hTmp = CreateThread(NULL, 0, g_server.CommunicationPlayer, (LPVOID)&p, 0, NULL);
@@ -97,7 +98,7 @@ int main()
 		g_server.GameStart(p.roomNum);
 
 		p.roomNum++;
-		cnt = 4;
+		cnt = MAX_PLAYER;
 		if (p.roomNum >= MAXROOMCOUNT)
 			break;
 		//break;

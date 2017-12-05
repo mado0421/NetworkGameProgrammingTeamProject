@@ -32,28 +32,6 @@ void err_display(char *msg)
 	LocalFree(lpMsgBuf);
 }
 
-//	사용자 정의 데이터 수신 함수
-int recvn(SOCKET s, char *buf, int len, int flags)
-{
-	int received;
-	char *ptr = buf;
-	int left = len;
-
-	while (left > 0)
-	{
-		received = recv(s, ptr, left, flags);
-		if (received == SOCKET_ERROR)
-			return SOCKET_ERROR;
-		else if (received == 0)
-			break;
-		left -= received;
-		ptr += received;
-	}
-
-	return (len - left);
-}
-
-
 int main(int argc, char* argv[])
 {
 	int retval;
@@ -76,6 +54,7 @@ int main(int argc, char* argv[])
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_addr.s_addr = inet_addr(SERVERIP);
 	serveraddr.sin_port = htons(SERVERPORT);
+
 	retval = connect(sock, (SOCKADDR*)&serveraddr, sizeof(serveraddr));
 	if (retval == SOCKET_ERROR)err_quit("connect()");
 
@@ -94,7 +73,7 @@ int main(int argc, char* argv[])
 	bullets[pi]->m_pos = Vector2D(100 + pi, 100 + pi);
 	bullets[pi]->m_type = 10 + pi;
 
-	::printf("[%d]  hp = %d, pos = %d %d\n", pi, player[pi].m_hp, player[pi].m_pos.x, player[pi].m_pos.y);
+	::printf("[%d]  hp = %d, pos = %f %f\n", pi, player[pi].m_hp, player[pi].m_pos.x, player[pi].m_pos.y);
 
 	//	서버와 데이터 통신
 	while (1) {
