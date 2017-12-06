@@ -30,43 +30,43 @@ ServerFrameWork::~ServerFrameWork()
 {
 }
 
-void ServerFrameWork::SetSocket(int RoomNumber, int PlayerId,SOCKET socket)
+void ServerFrameWork::SetSocket(int roomIndex, int PlayerId, SOCKET socket)
 {
-	room[RoomNumber].m_teamList[PlayerId].m_socket = socket;
+	room[roomIndex].m_teamList[PlayerId].m_socket = socket;
 	//	TimeOut 옵션 필요할 것 같음
 }
 
-void ServerFrameWork::InitRoom(int RoomNumber)
+void ServerFrameWork::InitRoom(int roomIndex)
 {
 	//	Make Event
-	room[RoomNumber].m_roomState = Play;
+	room[roomIndex].m_roomState = Play;
 	for (int i = 0; i < MAX_PLAYER; ++i) {
-		hCommunicated[RoomNumber][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
-		hSendPacket[RoomNumber][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
+		hCommunicated[roomIndex][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
+		hSendPacket[roomIndex][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
 	}
 
-	hGameThread[RoomNumber] = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hGameThread[roomIndex] = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
-void ServerFrameWork::GameStart(int RoomNumber)
+void ServerFrameWork::GameStart(int roomIndex)
 {
 	for (int i = 0; i < MAX_PLAYER; ++i) {
-		SetEvent(hSendPacket[RoomNumber][i]);
+		SetEvent(hSendPacket[roomIndex][i]);
 		//NOTUSESLEEP
-		Sleep(1000);
+		//Sleep(1000);
 	}
-	m_ThreadQueue.push(RoomNumber);
+	m_ThreadQueue.push(roomIndex);
 	SetEvent(hNextThreadCall);
-	room[RoomNumber].timeInit();
+	room[roomIndex].timeInit();
 }
 
-void ServerFrameWork::CloseRoom(int RoomNumber)
+void ServerFrameWork::CloseRoom(int roomIndex)
 {
 	for (int i = 0; i < MAX_PLAYER; ++i) {
-		CloseHandle(hCommunicated[RoomNumber][i]);
-		CloseHandle(hSendPacket[RoomNumber][i]);
+		CloseHandle(hCommunicated[roomIndex][i]);
+		CloseHandle(hSendPacket[roomIndex][i]);
 	}
-	CloseHandle(hGameThread[RoomNumber]);
+	CloseHandle(hGameThread[roomIndex]);
 }
 
 DWORD ServerFrameWork::ThreadOrder(LPVOID arg)
@@ -98,68 +98,41 @@ DWORD ServerFrameWork::ThreadOrder(LPVOID arg)
 
 DWORD ServerFrameWork::GameThread(LPVOID arg)
 {
-	int RoomNumber = (int)arg;
+	int roomIndex = (int)arg;
 	DWORD retEvent;
 	while (true)
 	{
-		WaitForSingleObject(hGameThread[RoomNumber], INFINITE);
-
-		//
+		//	wait queue
+		WaitForSingleObject(hGameThread[roomIndex], INFINITE);
+		//for test
 		if (cnt++ >= TEST_CNT_COUNT)break;
-
 		::printf("\n cnt = %d\n", cnt);
 
-		retEvent = WaitForMultipleObjects(MAX_PLAYER, hCommunicated[RoomNumber], TRUE, INFINITE);
+		//	wait Communication
+		retEvent = WaitForMultipleObjects(MAX_PLAYER, hCommunicated[roomIndex], TRUE, INFINITE);
 		if (retEvent != WAIT_OBJECT_0)break;
 
-		//	Room TimeCheckout
-		while (true) {
-			room[RoomNumber].Tick();
-			if (THREADFREQ > room[RoomNumber].m_ElapsedTime)
-				Sleep(1);
-			else {
-				room[RoomNumber].m_ElapsedTime = 0;
-				break;
-			}
-		}
-
-		//::printf("In GameThread room: %d\n", RoomNumber);
-		//	Communication Success?
-		//	{
-		//
-		//	}
-		
-
-		//	Set Data From Room -> Need Change
-		InfoTeam team[MAX_PLAYER];
-		InfoPlayer iPlayer[MAX_PLAYER];
-		InfoBullet iBullet[MAX_PLAYER][MAX_BULLET];
-
-		memcpy(&team, &room[RoomNumber].m_teamList, sizeof(InfoTeam)*MAX_PLAYER);
-		for (int i = 0; i < MAX_PLAYER; ++i)
-		{
-			iPlayer[i] = team[i].m_player;
-			memcpy(iBullet[i], team[i].m_bullets, sizeof(InfoBullet)*MAX_BULLET);
-		}
-
+#ifdef FIXFREQUENCY
+		//	Fix FrameRate with THREADFREQ
+		FixFrame(roomIndex);
+#endif
 		// Calc;
-		//
-		//
-		//
-		//
+		::printf("[%d] Calculate\n", roomIndex);
+		Calculate(roomIndex);
+		::printf("[%d] Calc Success\n", roomIndex);
 
 		// Set packet
 		S2CPacket packet;
 		::ZeroMemory(&packet, sizeof(S2CPacket));
-		packet.SetPacket(RoomNumber, room[RoomNumber]);
+		packet.SetPacket(roomIndex, room[roomIndex]);
 
 		//	Send
-		SendPacketToClient(&packet, RoomNumber);
-		::printf("SendPacketToClient %d \n", RoomNumber);
+		SendPacketToClient(&packet, roomIndex);
+		::printf("SendPacketToClient %d \n", roomIndex);
 
 		//	For CommunicationPlayer Thread, notice ready to Communicate
 		for (int i = 0; i < MAX_PLAYER; ++i)
-			SetEvent(hSendPacket[RoomNumber][i]);
+			SetEvent(hSendPacket[roomIndex][i]);
 
 		//	Set Next Thread's
 		SetEvent(hNextThreadCall);
@@ -194,36 +167,81 @@ DWORD ServerFrameWork::CommunicationPlayer(LPVOID arg)
 
 int ServerFrameWork::ReceivePacketFromClient(int roomNum, int PlayerID)
 {
-	InfoTeam *team = &room[roomNum].m_teamList[PlayerID];
+	//InfoTeam *team = &room[roomNum].m_teamList[PlayerID];
 	C2SPacket packet;
 	ZeroMemory(&packet, sizeof(C2SPacket));
 	int retval;
-	retval = recvn(team->m_socket, (char*)&packet, sizeof(C2SPacket), 0);
+	retval = recvn(TeamList(roomNum, PlayerID).m_socket, (char*)&packet, sizeof(C2SPacket), 0);
 	if (retval == SOCKET_ERROR)
 		return SOCKET_ERROR;
 	printf("ReceivePacketFromClient room:%d, PlayerId:%d, retval = %d\n", roomNum, PlayerID, retval);
-	memcpy(&team->m_player, &packet.player, sizeof(InfoPlayer));
-	memcpy(&team->m_bullets, &packet.Bullets, sizeof(InfoBullet)*MAX_BULLET);
+	memcpy(&TeamList(roomNum, PlayerID).m_player, &packet.player, sizeof(InfoPlayer));
+	memcpy(&TeamList(roomNum, PlayerID).m_bullets, &packet.Bullets, sizeof(InfoBullet)*MAX_BULLET);
 
 	return retval;
 }
 
 void ServerFrameWork::SendPacketToClient(S2CPacket * packet, int roomNum)
 {
-	InfoTeam teamList[MAX_PLAYER];
-	memcpy(&teamList, room[roomNum].m_teamList, sizeof(InfoTeam)*MAX_PLAYER);
-
 	SOCKET client_sock[MAX_PLAYER];
+
 	for (int i = 0; i < MAX_PLAYER; ++i){
-		client_sock[i] = teamList[i].m_socket;
+		client_sock[i] = TeamList(roomNum,i).m_socket;
 	}
 
 	//	ConnectCheck? , Need Thread?
 	for (int i = 0; i < MAX_PLAYER; ++i)
 	{
 		packet->SendTime = chrono::system_clock::now();
+		packet->Message = 0;
 		send(client_sock[i], (char*)packet, sizeof(S2CPacket), 0);
 	}
 }
+
+void ServerFrameWork::Calculate(int roomNum)
+{
+	InfoPlayer* player;
+	InfoBullet* bullet;
+
+	for (int i = 0; i < MAX_PLAYER; ++i)
+	{
+		player = &TeamList(roomNum, i).m_player;
+		for (int j = 0; j < MAX_PLAYER; ++j)
+		{
+			//	동일 플레이어 건너띔
+			if (i == j)continue;
+
+			for (int k = 0; k < MAX_BULLET; ++k)
+			{
+				bullet = &TeamList(roomNum, j).m_bullets[k];
+				if (!IsExistBullet(bullet->m_pos.x))continue;
+
+				if (player->m_pos.x - PLAYERSIZE > bullet->m_pos.x + BULLETSIZE)continue;
+				if (player->m_pos.x + PLAYERSIZE < bullet->m_pos.x - BULLETSIZE)continue;
+				if (player->m_pos.y - PLAYERSIZE > bullet->m_pos.y + BULLETSIZE)continue;
+				if (player->m_pos.y + PLAYERSIZE < bullet->m_pos.y - BULLETSIZE)continue;
+
+				//	Collide Test ok
+				player->m_hp -= BULLETDAMAGE;
+				DestroyBullet(bullet);
+			}
+		}
+	}
+}
+
+inline void ServerFrameWork::FixFrame(int roomIndex)
+{
+	while (true) {
+		room[roomIndex].Tick();
+		if (THREADFREQ > room[roomIndex].m_ElapsedTime)
+			Sleep(1);
+		else {
+			room[roomIndex].m_ElapsedTime = 0;
+			break;
+		}
+	}
+}
+
+
 
 

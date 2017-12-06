@@ -24,8 +24,21 @@ using namespace std;
 #define MAX_PLAYER 4
 #define MAX_ITEM 3
 
+#define DEFAULTHP 1
+#define BULLETSPD 320.0f
+#define BULLETSIZE 2.5f
+#define BULLETDAMAGE 1
+#define NOTEXIST	1'000'000
+
+
+#define PLAYERSPD 125.0f
+#define PLAYERSIZE 7.5f
+#define MAX_AMMO 6
+
 #define MAXROOMCOUNT	100
 #define THREADFREQ	3.0f
+
+#define FIXFREQUENCY
 
 struct Vector2D
 {
@@ -56,6 +69,17 @@ struct InfoBullet {
 	int m_type;
 };
 
+inline bool IsExistBullet(float posX){
+	if (posX == NOTEXIST)
+		return false;
+	else 
+		return true;
+}
+inline void DestroyBullet(InfoBullet* bullet) 
+{
+	bullet->m_pos.x = NOTEXIST;
+}
+
 struct InfoItem {
 	Vector2D m_pos;
 	int m_type;
@@ -66,6 +90,9 @@ struct InfoTeam {
 	InfoPlayer m_player;
 	InfoBullet m_bullets[MAX_BULLET];
 };
+
+
+#define TeamList(RoomIndex,PlayerIndex) room[RoomIndex].m_teamList[PlayerIndex]
 
 bool inline IsZero(float a) {
 	if (abs(a) < FLT_EPSILON)
