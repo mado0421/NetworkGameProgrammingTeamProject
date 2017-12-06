@@ -6,52 +6,6 @@
 
 Room * g_testRoom;
 
-//소켓 함수 오류 출력 후 종료
-void err_quit(char *msg)
-{
-	LPVOID lpMsgBuf;
-	FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-		NULL, WSAGetLastError(),
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)&lpMsgBuf, 0, NULL);
-	MessageBox(NULL, (LPCTSTR)lpMsgBuf, msg, MB_ICONERROR);
-	LocalFree(lpMsgBuf);
-	exit(1);
-}
-
-//소켓 함수 오류 출력
-void err_display(char *msg)
-{
-	LPVOID lpMsgBuf;
-	FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-		NULL, WSAGetLastError(),
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)&lpMsgBuf, 0, NULL);
-	printf("[%s] %s", msg, (char *)lpMsgBuf);
-	LocalFree(lpMsgBuf);
-}
-
-// 사용자 정의 데이터 수신 함수
-int recvn(SOCKET s, char *buf, int len, int flags)
-{
-	int received;
-	char *ptr = buf;
-	int left = len;
-
-	while (left > 0) {
-		received = recv(s, ptr, left, flags);
-		if (received == SOCKET_ERROR)
-			return SOCKET_ERROR;
-		else if (received == 0)
-			break;
-		left -= received;
-		ptr += received;
-	}
-
-	return (len - left);
-}
 
 int main(int argc, char *argv[])
 {
@@ -86,6 +40,10 @@ int main(int argc, char *argv[])
 	SOCKADDR_IN clientaddr;
 	int addrlen;
 
+	//---------------------for test about single thread---------------
+	int playerNum;
+	//----------------------------------------------------------------
+
 	while (1) {
 		//accept()
 		addrlen = sizeof(clientaddr);
@@ -98,19 +56,27 @@ int main(int argc, char *argv[])
 		printf("\n[TCP 서버] 클라이언트 접속: IP 주소=%s, 포트 번호=%d\n",
 			inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 
-		/*for Test*/
-		g_testRoom->playerArrive(client_sock);
+		char msg[MSGSIZE];
+		playerNum = g_testRoom->playerArrive(client_sock);
+		/*플레이어 Number 보냄*/
+		msg[0] = msg::TEAMNO;
+		send(g_testRoom->m_teamList[playerNum].m_socket, msg, MSGSIZE, 0);
+		if (retval == SOCKET_ERROR) return false;
+
+		msg[0] = playerNum;
+		send(g_testRoom->m_teamList[playerNum].m_socket, msg, MSGSIZE, 0);
+		if (retval == SOCKET_ERROR) return false;
+
+		printf("\n[TCP 로비] 클라이언트 슬롯: 슬롯 번호=%d\n",
+			playerNum);
 
 		while (1)
 		{
-			char msg[MSGSIZE];
-			retval = recvn(client_sock, msg, MSGSIZE, 0);
-			if (retval == 0) break;
-			if (!g_testRoom->checkMsg(msg)) break;
+			if (!g_testRoom->checkMsg(playerNum)) break;
 
-			msg[0] = 0x00;
-			g_testRoom->sendMsg(0, 0);
 		}
+
+		g_testRoom->m_teamList[playerNum].m_socket = NULL;
 
 		// closesocket()
 		closesocket(client_sock);

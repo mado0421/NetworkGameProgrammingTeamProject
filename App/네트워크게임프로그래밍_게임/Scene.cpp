@@ -1,9 +1,15 @@
 #include "stdafx.h"
 #include "Scene.h"
+#include "Framework.h"
 
 
 Scene::Scene()
 {
+}
+
+Scene::Scene(Framework * pFramework)
+{
+	m_pFramework = pFramework;
 }
 
 Scene::~Scene()
@@ -14,6 +20,11 @@ Scene::~Scene()
 
 PlayScene::PlayScene()
 {
+}
+
+PlayScene::PlayScene(Framework * pFramework)
+{
+	m_pFramework = pFramework;
 }
 
 PlayScene::~PlayScene()
@@ -132,6 +143,11 @@ TitleScene::TitleScene()
 {
 }
 
+TitleScene::TitleScene(Framework * pFramework)
+{
+	m_pFramework = pFramework;
+}
+
 TitleScene::~TitleScene()
 {
 }
@@ -159,6 +175,15 @@ void TitleScene::mouseInput(int button, int state, int x, int y)
 
 void TitleScene::keyDown(unsigned char key, int x, int y)
 {
+	switch (key)
+	{
+	case 'r':
+	case 'R':
+		changeScene(SceneType::Lobby);
+		break;
+	default:
+		break;
+	}
 }
 
 void TitleScene::keyUp(unsigned char key, int x, int y)
@@ -178,6 +203,11 @@ void TitleScene::specialKeyUp(int key, int x, int y)
 
 LobbyScene::LobbyScene()
 {
+}
+
+LobbyScene::LobbyScene(Framework * pFramework)
+{
+	m_pFramework = pFramework;
 }
 
 LobbyScene::~LobbyScene()
@@ -202,8 +232,11 @@ void LobbyScene::initialize()
 
 void LobbyScene::leave()
 {	
-	//closesocket()
-	closesocket(sock);
+	if (m_connected)
+	{
+		//closesocket()
+		closesocket(sock);
+	}
 }
 
 void LobbyScene::update(float elapsedTime)
@@ -230,23 +263,45 @@ void LobbyScene::mouseInput(int button, int state, int x, int y)
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
 		if (!m_connected)
-		{		
+		{
+			if (!accessLobby()) {
+				std::cout << "accessLobby()에서 문제!" << std::endl;
+				exit(1);
+			}
+			if (!checkMsg()) {
+				std::cout << "checkMsg()에서 문제!" << std::endl;
+				exit(1);
+			}
 			m_connected = true;
-			// connet()
-			ZeroMemory(&serveraddr, sizeof(serveraddr));
-			serveraddr.sin_family = AF_INET;
-			serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-			serveraddr.sin_port = htons(SERVERPORT);
-			retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
+		}
+		else if (m_connected && m_lightOn)
+		{
+			char msg[MSGSIZE];
+			msg[0] = msg::STARTPLAY;
+			send(sock, msg, MSGSIZE, 0);
+			if (!checkMsg()) {
+				std::cout << "checkMsg()에서 문제!" << std::endl;
+				exit(1);
+			}
 		}
 		else
 		{
-			sendMsg(PLAYER_0, 0);
-			checkMsg();
+			char msg[MSGSIZE];
+			msg[0] = msg::TEST;
+			send(sock, msg, MSGSIZE, 0);
+			if (!checkMsg()) {
+				std::cout << "checkMsg()에서 문제!" << std::endl;
+				exit(1);
+			}
+			m_lightOn = true;
 		}
 	}
 	else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
 	{
+		if (m_connected)
+		{
+			leaveServer();
+		}
 	}
 	else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN)
 	{
@@ -273,40 +328,63 @@ bool LobbyScene::checkMsg()
 {
 	char msg[MSGSIZE];
 	retval = recvn(sock, msg, MSGSIZE, 0);
-	if (retval == 0) return false;
+	if (retval == SOCKET_ERROR) return false;
 	switch (msg[0])
 	{
-	case 0x00:
-		m_lightOn = true;
-		break;
-	case 0x01:
-		m_lightOn = true;
+	case msg::TEAMNO:
+		retval = recvn(sock, msg, MSGSIZE, 0);
+		if (retval == SOCKET_ERROR) return false;
+		m_myTeamNo = msg[0];
+		return true;
 
-		break;
-	case 0x02:
-		m_lightOn = true;
+	case msg::ISREADY:
+		msg[0] = msg::OK;
+		retval = send(sock, msg, MSGSIZE, 0);
+		if (retval == SOCKET_ERROR) return false;
+		return true;
 
-		break;
+	case msg::STARTPLAY:
+		msg[0] = msg::OK;
+		retval = send(sock, msg, MSGSIZE, 0);
+		if (retval == SOCKET_ERROR) return false;
+		changeScene(SceneType::Play);
+		return true;
+
+	case msg::TEST:
+		printf("이걸 나한테 왜 보내?\n");
+		return true;
+
+	case msg::OK:
+		return true;
+
 	default:
 		return false;
 	}
+	return false;
+}
+
+bool LobbyScene::accessLobby()
+{
+	// connet()
+	ZeroMemory(&serveraddr, sizeof(serveraddr));
+	serveraddr.sin_family = AF_INET;
+	serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	serveraddr.sin_port = htons(SERVERPORT);
+	retval = connect(sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
+	if (retval == SOCKET_ERROR) return false;
+
 	return true;
 }
 
-void LobbyScene::sendMsg(int player, int type)
+void LobbyScene::leaveServer()
 {
 	char msg[MSGSIZE];
-	switch (type)
-	{
-	case 0:
-		msg[0] = 0x01;
-		break;
-	case 1:
-		msg[0] = 0x02;
-		break;
-	default:
-		break;
-	}
+	msg[0] = msg::LEAVE;
 	send(sock, msg, MSGSIZE, 0);
-	return;
+	closesocket(sock);
+}
+
+void Scene::changeScene(int idx)
+{
+	m_pFramework->changeScene(idx);
 }
