@@ -15,6 +15,9 @@
 #include<stdlib.h>	
 #include<stdio.h>
 #include<math.h>
+#include<chrono>
+#include<queue>
+using namespace std;
 //Room 구조체 전역변수 예정
 
 #define MAX_BULLET 18
@@ -22,6 +25,7 @@
 #define MAX_ITEM 3
 
 #define MAXROOMCOUNT	100
+#define THREADFREQ	3.0f
 
 struct Vector2D
 {
@@ -63,12 +67,21 @@ struct InfoTeam {
 	InfoBullet m_bullets[MAX_BULLET];
 };
 
+bool inline IsZero(float a) {
+	if (abs(a) < FLT_EPSILON)
+		return true;
+	else 
+		return false;
+}
+enum {
+	Lobby = false, Play = true
+};
 struct Room
 {
 	///////////////////////////////////////////////
 	// 클라이언트
 	// Room을 특정하는 고유 키
-	unsigned short m_roomID;
+	unsigned int m_roomID;
 
 	// 각 팀별로 정보를 저장하는 배열
 	InfoTeam m_teamList[MAX_PLAYER];
@@ -76,11 +89,29 @@ struct Room
 	// 아이템 정보를 저장하는 배열
 	InfoItem m_itemList[MAX_ITEM];
 
+
 	// Room의 상태를 저장하는 변수(false: Lobby, true: Play)
 	bool m_roomState;
 
 	// Room에 접속해있는 현재 인원
 	int m_numOfPlayerInRoom;
+
+
+	// 준혁 - 시간체크용 tmp;
+	float m_ElapsedTime = 0;
+	chrono::system_clock::time_point m_clock;
+	chrono::system_clock::time_point m_past;
+	void Tick() { 
+		m_clock = chrono::system_clock::now();
+		m_ElapsedTime += chrono::duration_cast<chrono::milliseconds>(m_clock - m_past).count()*0.001f;
+		m_past = m_clock;
+		//printf("Tick = %f\n", m_ElapsedTime);
+		Sleep(10);
+	};
+	void timeInit() {
+		m_past = chrono::system_clock::now();
+		m_ElapsedTime = 0;
+	}
 
 	///////////////////////////////////////////////
 	// 서버
@@ -99,5 +130,43 @@ struct Room
 	void readyToStartPlay();
 	void playerArrive();
 };
+
+// TMP using in 
+//DWORD ServerFrameWork::CommunicationPlayer(LPVOID arg)'s argment
+struct Room_Player
+{
+	int roomNum;
+	int playerNum;
+};
+
+struct S2CPacket{	// Server to Client Packet 구조체 실제 데이터를 서버에서 보낼
+	DWORD	Message;	//	HIWORD 메시지 타입
+						//	0번 Data, 1번 게임시작, 2번 게임종료…
+	InfoPlayer iPlayer[MAX_PLAYER];
+	InfoBullet iBullet[MAX_PLAYER][MAX_BULLET];
+	chrono::system_clock::time_point SendTime;
+	
+	void SetPacket(int roomNumber, Room& room)
+	{
+		InfoTeam iTeam[MAX_PLAYER];
+		memcpy(&iTeam, &(room.m_teamList), sizeof(InfoTeam)*MAX_PLAYER);
+
+		for (int i = 0; i < MAX_PLAYER; ++i)
+		{
+			memcpy(&iPlayer[i], &iTeam[i].m_player, sizeof(InfoPlayer));
+			memcpy(&iBullet[i], &iTeam[i].m_bullets, sizeof(InfoBullet)*MAX_BULLET);
+		}
+	
+	};
+};
+
+struct C2SPacket {
+
+	InfoPlayer player;
+	InfoBullet Bullets[MAX_BULLET];
+};
+
+int recvn(SOCKET s, char *buf, int len, int flags);
+
 
 // TODO: 프로그램에 필요한 추가 헤더는 여기에서 참조합니다.
