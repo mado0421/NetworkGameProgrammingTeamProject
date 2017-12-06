@@ -26,11 +26,11 @@ GLvoid Framework::initialize(int argc, char **argv)
 	
 	prevTime = timeGetTime();
 
-	m_scenes[SceneType::Title] = new TitleScene();
-	m_scenes[SceneType::Lobby] = new LobbyScene();
-	m_scenes[SceneType::Play] = new PlayScene();
+	m_scenes[SceneType::Title] = new TitleScene(this);
+	m_scenes[SceneType::Lobby] = new LobbyScene(this);
+	m_scenes[SceneType::Play] = new PlayScene(this);
 
-	m_currentScene = m_scenes[SceneType::Lobby];
+	m_currentScene = m_scenes[SceneType::Title];
 //	m_currentScene = m_scenes[SceneType::Play];
 	m_currentScene->initialize();
 }

@@ -15,52 +15,59 @@ Room::~Room()
 void Room::initialize()
 {
 	/*for Test*/
+	for (int i = 0; i < MAX_PLAYER; ++i)
+		m_teamList[i].m_socket = NULL;
 }
 
-void Room::playerArrive(const SOCKET &client_sock)
-{
-	/*for Test*/
-	m_teamList[0].m_socket = client_sock;
-
-}
-
-bool Room::checkMsg(char* msg)
-{
-	if (msg[0] == NULL) return false;
-	switch (msg[0])
-	{
-	case 0x00:
-		printf("0x00\n");
-		break;
-	case 0x01:
-		printf("0x01\n");
-		break;
-	case 0x02:
-		printf("0x02\n");
-		break;
-	default:
-		return false;
-	}
-	return true;
-}
-
-void Room::sendMsg(int player, int type)
+bool Room::checkMsg(int playerNum)
 {
 	char msg[MSGSIZE];
-	switch (type)
+	int retval;
+	retval = recvn(m_teamList[playerNum].m_socket, msg, MSGSIZE, 0);
+	if (retval == SOCKET_ERROR) return false;
+	switch (msg[0])
 	{
-	case 0:
-		msg[0] = 0x00;
-		break;
-	case 1:
-		msg[0] = 0x01;
-		break;
-	case 2:
-		msg[0] = 0x02;
-		break;
+	case msg::STARTPLAY:
+		msg[0] = msg::STARTPLAY;
+		retval = send(m_teamList[playerNum].m_socket, msg, MSGSIZE, 0);
+		if (retval == SOCKET_ERROR) return false;
+		return true;
+
+	case msg::TEST:
+		msg[0] = msg::OK;
+		retval = send(m_teamList[playerNum].m_socket, msg, MSGSIZE, 0);
+		if (retval == SOCKET_ERROR) return false;
+		return true;
+
+	case msg::LEAVE:
+		m_teamList[playerNum].m_socket = NULL;
+		return false;
+
+	case msg::OK:
+		printf("%d번째 애가 OK래..\n", playerNum);
+		return true;
+
 	default:
-		break;
+		printf("이걸 나한테 왜 보내?\n");
+		return false;
 	}
-	send(m_teamList[player].m_socket, msg, MSGSIZE, 0);
-	return;
+	return false;
+}
+
+void Room::playerLeave()
+{
+
+}
+
+int Room::playerArrive(const SOCKET &client_sock)
+{
+	for (int i = 0; i < MAX_PLAYER; ++i)
+	{
+		if (m_teamList[i].m_socket == NULL)
+		{
+			m_teamList[i].m_socket = client_sock;
+			return i;
+		}
+	}
+	return -1;
 }

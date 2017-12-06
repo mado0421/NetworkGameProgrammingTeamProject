@@ -35,6 +35,19 @@
 #define SERVERPORT 9000
 #define MSGSIZE 1
 
+#define MAX_BULLET 18
+#define MAX_PLAYER 4
+
+enum msg {
+	TEAMNO=0,
+	ISREADY,
+	STARTPLAY,
+	LEAVE,
+	TEST,
+
+	OK,
+};
+
 struct Color
 {
 	float r, g, b, a;
@@ -70,6 +83,28 @@ namespace Vector
 	inline Vector2D add(Vector2D a, Vector2D b) { return Vector2D(b.x + a.x, b.y + a.y); }
 	inline Vector2D sub(Vector2D from, Vector2D to) { return Vector2D(to.x - from.x, to.y - from.y); }
 }
+
+struct InfoPlayer {
+	Vector2D m_pos;
+	int m_hp;
+	int m_state;
+};
+
+struct InfoBullet {
+	Vector2D m_pos;
+	int m_type;
+};
+
+struct InfoItem {
+	Vector2D m_pos;
+	int m_type;
+};
+
+struct InfoTeam {
+	SOCKET m_socket;
+	InfoPlayer m_player;
+	InfoBullet m_bullets[MAX_BULLET];
+};
 
 //소켓 함수 오류 출력 후 종료
 inline void err_quit(char *msg)

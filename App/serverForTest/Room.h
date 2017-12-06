@@ -30,7 +30,7 @@ struct InfoTeam {
 
 class Room
 {
-private:
+public:
 	///////////////////////////////////////////////
 	// 클라이언트
 	// Room을 특정하는 고유 키
@@ -57,10 +57,9 @@ public:
 public:
 	///////////////////////////////////////////////
 	void initialize();
-	void playerArrive(const SOCKET &client_sock);
 
-	bool checkMsg(char* msg);
-	void sendMsg(int player, int type);
+	bool checkMsg(int playerNum);
+	void playerLeave();
 
 	///////////////////////////////////////////////
 	// LobbyState
@@ -68,13 +67,14 @@ public:
 	// 클라이언트
 	bool accessLobby();
 	void leaveLobby();
-	void checkMsg();
 
 	///////////////////////////////////////////////
 	// 서버
 	bool isPlayerReady(int idx);
 	void readyToStartPlay();
 	void playerArrive();
+
+	int playerArrive(const SOCKET &client_sock);
 
 	///////////////////////////////////////////////
 	// PlayState
