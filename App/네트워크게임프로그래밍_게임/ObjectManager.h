@@ -1,5 +1,6 @@
 #pragma once
 #include "Object.h"
+extern InfoBullet b[72];
 
 class ObjectManager
 {
@@ -16,7 +17,7 @@ public:
 	ObjectManager();
 	~ObjectManager();
 
-	void initialize();
+	void initialize(int team);
 
 	void addBullet(float x, float y, int team);
 	void reloadAmmo(int team);

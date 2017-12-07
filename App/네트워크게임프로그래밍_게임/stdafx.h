@@ -38,6 +38,7 @@
 #define MSGSIZE2 4
 #define MAX_BULLET 18
 #define MAX_PLAYER 4
+#define INVALID 1000000
 
 enum msg {
 	TEAMNO = 0,

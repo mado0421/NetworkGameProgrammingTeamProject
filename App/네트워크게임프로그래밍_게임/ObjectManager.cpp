@@ -4,7 +4,15 @@
 
 ObjectManager::ObjectManager()
 {
-
+	for (int i = 0; i < MAX_BULLET; ++i)
+	{
+		m_myBulletList[i].setPos(Vector2D(INVALID,0));
+	}
+	for (int i = 0; i < MAX_BULLET * 3; ++i)
+	{
+		m_OtherBulletList[i].setSize(2.5f);
+		m_OtherBulletList[i].setHp(1);
+	}
 }
 
 ObjectManager::~ObjectManager()
@@ -19,8 +27,9 @@ struct wall
 	int y;
 };
 
-void ObjectManager::initialize()
+void ObjectManager::initialize(int team)
 {
+	m_myTeamNo = team;
 	///*여기서 Wall 맵을 받아서 그걸 넣어줘야 함*/
 	std::ifstream mapFile("assets/maps/map_1.map");
 	if (mapFile.is_open())
@@ -63,6 +72,7 @@ void ObjectManager::addBullet(float x, float y, int team)
 				Vector::normalize(Vector2D(Vector::sub(p->getPos(), Vector2D(x, y)))), PLAYER_0);*/
 				m_myBulletList[m_bulletCount] = Bullet(p->getPos(),
 					Vector::normalize(Vector2D(Vector::sub(p->getPos(), Vector2D(x, y)))), PLAYER_0);
+				b[m_myTeamNo*MAX_BULLET + m_bulletCount].m_pos = m_myBulletList[m_bulletCount].getPos();
 				m_bulletCount++;
 				p->fire();
 			}
@@ -214,7 +224,6 @@ void ObjectManager::render()
 
 void ObjectManager::updatePlayerInfo(InfoPlayer * p, InfoBullet* b)
 {
-
 	for (int i = 0, k = 0; i < 4; ++i, ++k)
 	{
 		if (i == m_myTeamNo)
@@ -225,7 +234,8 @@ void ObjectManager::updatePlayerInfo(InfoPlayer * p, InfoBullet* b)
 		m_playerList[i].setPos(p[i].m_pos);
 		for (int j = 0; j < MAX_BULLET; ++j)
 		{
-			m_OtherBulletList[k*MAX_BULLET + j].setPos(b[k*MAX_BULLET + j].m_pos);
+			m_OtherBulletList[k*MAX_BULLET + j].setTeam(5);
+			m_OtherBulletList[k*MAX_BULLET + j].setPos(b[i*MAX_BULLET + j].m_pos);
 		}
 		//printf("%f,%f\n", m_playerList[i].getPos().x, m_playerList[i].getPos().y);
 	}

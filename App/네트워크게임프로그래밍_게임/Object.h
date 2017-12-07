@@ -57,10 +57,12 @@ public:
 	void setSpd(float val)			{ m_spd = val; }
 	void setColor(Color color)		{ m_color = color; }
 	void setStandardTime(float val) { m_standardTime = val; }
+	void setSize(float f)			{ m_size = f; }
 
 	void addHp(int val)				{ m_hp += val; }
 	void addPos(Vector2D pos)		{ m_pos.x += pos.x; m_pos.y += pos.y; }
 	void addSpd(float val)			{ m_spd += val; }
+
 
 	Vector2D getPos() const			{ return m_pos; }
 	int getHp()	const				{ return m_hp; }
@@ -142,6 +144,7 @@ public:
 	void setDirection(Vector2D dir) { m_dir = dir; }
 
 	int getTeam() const { return m_team; }
+	void setTeam(int val) { m_team = val; }
 	Vector2D getDirection() const { return m_dir; }
 };
 

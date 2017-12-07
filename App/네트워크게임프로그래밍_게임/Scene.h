@@ -2,7 +2,7 @@
 #include "ObjectManager.h"
 
 #define MAX_KEY 256
-
+extern InfoBullet b[72];
 class Framework;
 
 class Scene

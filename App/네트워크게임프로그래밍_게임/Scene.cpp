@@ -312,8 +312,9 @@ void PlayScene::initialize(void* data)
 	{
 		changeScene(SceneType::Title);
 	}
+	m_myTeam_No = m_networkData->m_myTeamNo;
 	m_objMng = new ObjectManager();
-	m_objMng->initialize();
+	m_objMng->initialize(m_networkData->m_myTeamNo);
 	hThread = CreateThread(NULL, 0, communicateThreadFunc, (void*)this, 0, NULL);
 }
 
