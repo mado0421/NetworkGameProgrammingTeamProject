@@ -41,7 +41,11 @@ using namespace std;
 #define FIXFREQUENCY
 
 #define MSGSIZE 1
+<<<<<<< HEAD
 int recvn(SOCKET s, char *buf, int len, int flags);
+=======
+
+>>>>>>> 02e6935ba93b788d9325b1ba5d0484f6e9ef4cf3
 enum msg {
 	TEAMNO = 0,
 	ISREADY,
@@ -51,6 +55,10 @@ enum msg {
 
 	OK,
 };
+<<<<<<< HEAD
+=======
+
+>>>>>>> 02e6935ba93b788d9325b1ba5d0484f6e9ef4cf3
 struct Vector2D
 {
 	float x, y;
@@ -161,6 +169,44 @@ struct Room
 	void timeInit() {
 		m_past = chrono::system_clock::now();
 		m_ElapsedTime = 0;
+	}
+
+	bool checkAllPlayerInRoom()
+	{
+		char msg[MSGSIZE];
+		int retval;
+		for (int i = 0; i < MAX_PLAYER; ++i)
+		{
+			if (m_teamList[i].m_socket != NULL)
+			{
+				msg[0] = msg::ISREADY;
+				retval = send(m_teamList[i].m_socket, msg, MSGSIZE, 0);
+				if (retval == SOCKET_ERROR) return false;
+				retval = recvn(m_teamList[i].m_socket, msg, MSGSIZE, 0);
+				if (retval == SOCKET_ERROR) return false;
+			}
+			else return false;
+		}
+		return true;
+	}
+
+	bool gameStart()
+	{
+		char msg[MSGSIZE];
+		int retval;
+		for (int i = 0; i < MAX_PLAYER; ++i)
+		{
+			if (m_teamList[i].m_socket != NULL)
+			{
+				msg[0] = msg::STARTPLAY;
+				retval = send(m_teamList[i].m_socket, msg, MSGSIZE, 0);
+				if (retval == SOCKET_ERROR) return false;
+				retval = recvn(m_teamList[i].m_socket, msg, MSGSIZE, 0);
+				if (retval == SOCKET_ERROR) return false;
+			}
+			else return false;
+		}
+		return true;
 	}
 
 	///////////////////////////////////////////////

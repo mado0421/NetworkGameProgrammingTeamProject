@@ -1,2 +1,6 @@
-﻿  stdafx.cpp
-d:\공부\3학년 2학기\네트워크 게임 프로그래밍\텀플\2017_ngp\app\네트워크게임프로그래밍_게임\dependencies\glew.h(1205): fatal error C1083: 포함 파일을 열 수 없습니다. 'GL/glu.h': No such file or directory
+﻿  Framework.cpp
+c:\users\20\desktop\2017_ngp-cyh\2017_ngp\app\네트워크게임프로그래밍_게임\object.h(172): warning C4244: '인수': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\20\desktop\2017_ngp-cyh\2017_ngp\app\네트워크게임프로그래밍_게임\framework.cpp(61): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\20\desktop\2017_ngp-cyh\2017_ngp\app\네트워크게임프로그래밍_게임\framework.cpp(127): warning C4101: 'playerNumber' :참조되지 않은 지역 변수입니다.
+  네트워크게임프로그래밍_게임.vcxproj -> C:\Users\20\Desktop\2017_NGP-CYH\2017_NGP\App\x64\Debug\네트워크게임프로그래밍_게임.exe
+  네트워크게임프로그래밍_게임.vcxproj -> C:\Users\20\Desktop\2017_NGP-CYH\2017_NGP\App\x64\Debug\네트워크게임프로그래밍_게임.pdb (Partial PDB)
