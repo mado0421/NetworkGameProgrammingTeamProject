@@ -29,11 +29,16 @@ public:	// 재욱
 	void deleteRoom(int roomID);
 	void checkRoomsState();
 
+	int findVocantRoom(SOCKET& socket);   //빈 자리가 있는 룸을 찾아서 그 룸의 번호를 반환하는 함수
+	bool isGameReady(int i) {
+		return room[i].m_roomState;
+	}
 	public:
 		void SetSocket(int roomIndex, int PlayerId, SOCKET socket);
 		void InitRoom(int roomIndex);
 		void GameStart(int roomIndex);
 		void CloseRoom(int roomIndex);
+	
 public:
 	//	Using in Thread Function
 	static DWORD WINAPI GameThread(LPVOID arg);
@@ -44,5 +49,6 @@ public:
 	static void SendPacketToClient(S2CPacket* packet,int roomNum);
 	static void Calculate(int roomNum);
 	static inline void FixFrame(int roomNum);
+
 };
 

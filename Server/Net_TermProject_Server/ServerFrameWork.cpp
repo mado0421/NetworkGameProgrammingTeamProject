@@ -46,6 +46,18 @@ void ServerFrameWork::InitRoom(int roomIndex)
 	}
 
 	hGameThread[roomIndex] = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	Room_Player p[MAX_PLAYER];
+	HANDLE hTmp;
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		p[i].roomNum = roomIndex;
+		p[i].playerNum = i;
+		hTmp = CreateThread(NULL, 0, CommunicationPlayer, (LPVOID)&p[i], 0, NULL);
+		CloseHandle(hTmp);
+	}
+	hTmp = CreateThread(NULL, 0, GameThread, (LPVOID)roomIndex, 0, NULL);
+	CloseHandle(hTmp);
+	
 }
 
 void ServerFrameWork::GameStart(int roomIndex)
@@ -244,7 +256,32 @@ inline void ServerFrameWork::FixFrame(int roomIndex)
 		}
 	}
 }
+////////////////////////////////////////////////////////////////////////////////////
+/// 로비 ///
+///////////////////////////////////////////////////////////////////////////////////
 
 
+int ServerFrameWork::findVocantRoom(SOCKET& socket)
+{
+	for (int i = 0; i < MAXROOMCOUNT; ++i)
+	{
+		/*room[i]에 모든 플레이어가 있는게 아니면*/
+		if (!room[i].checkAllPlayerInRoom())
+		{
+			/*그 룸에 지금 들어온 애를 넣고*/
+			if (!room[i].playerArrive(socket)) return -2;
+
+			/*만약 지금 애 들어가서 그 룸이 4명이 되었으면*/
+			if (room[i].checkAllPlayerInRoom())
+			{
+				/*게임 스타트 시킴*/
+				room[i].gameStart();
+				room[i].m_roomState = Play;
+			}
+			return i;
+		}
+	}
+	return -1;
+}
 
 

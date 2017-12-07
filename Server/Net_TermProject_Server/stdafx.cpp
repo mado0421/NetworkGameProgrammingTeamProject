@@ -26,4 +26,24 @@ int recvn(SOCKET s, char *buf, int len, int flags)
 // TODO: 필요한 추가 헤더는
 // 이 파일이 아닌 STDAFX.H에서 참조합니다.
 
+bool Room::playerArrive(SOCKET& socket)
+{
+	for (int i = 0; i < MAX_PLAYER; ++i)
+	{
+		if (m_teamList[i].m_socket == NULL)
+		{
+			m_teamList[i].m_socket = socket;
+			int retval;
+			char msg[MSGSIZE];
+			msg[0] = msg::TEAMNO;
+			retval = send(socket, msg, MSGSIZE, 0);
+			if (retval == SOCKET_ERROR) return false;
+			msg[0] = i;
+			retval = send(socket, msg, MSGSIZE, 0);
+			if (retval == SOCKET_ERROR) return false;
 
+			return true;
+		}
+	}
+	return false;
+}

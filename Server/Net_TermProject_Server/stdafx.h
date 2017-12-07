@@ -40,6 +40,17 @@ using namespace std;
 
 #define FIXFREQUENCY
 
+#define MSGSIZE 1
+int recvn(SOCKET s, char *buf, int len, int flags);
+enum msg {
+	TEAMNO = 0,
+	ISREADY,
+	STARTPLAY,
+	LEAVE,
+	TEST,
+
+	OK,
+};
 struct Vector2D
 {
 	float x, y;
@@ -157,6 +168,43 @@ struct Room
 
 	Room() {};
 	~Room() {};
+	bool checkAllPlayerInRoom()
+	{
+		char msg[MSGSIZE];
+		int retval;
+		for (int i = 0; i < MAX_PLAYER; ++i)
+		{
+			if (m_teamList[i].m_socket != NULL)
+			{
+				msg[0] = msg::ISREADY;
+				retval = send(m_teamList[i].m_socket, msg, MSGSIZE, 0);
+				if (retval == SOCKET_ERROR) return false;
+				retval = recvn(m_teamList[i].m_socket, msg, MSGSIZE, 0);
+				if (retval == SOCKET_ERROR) return false;
+			}
+			else return false;
+		}
+		return true;
+	}
+
+	bool gameStart()
+	{
+		char msg[MSGSIZE];
+		int retval;
+		for (int i = 0; i < MAX_PLAYER; ++i)
+		{
+			if (m_teamList[i].m_socket != NULL)
+			{
+				msg[0] = msg::STARTPLAY;
+				retval = send(m_teamList[i].m_socket, msg, MSGSIZE, 0);
+				if (retval == SOCKET_ERROR) return false;
+				retval = recvn(m_teamList[i].m_socket, msg, MSGSIZE, 0);
+				if (retval == SOCKET_ERROR) return false;
+			}
+			else return false;
+		}
+		return true;
+	}
 	///////////////////////////////////////////////
 	// 클라이언트
 	bool accessLobby();
@@ -167,7 +215,8 @@ struct Room
 	// 서버
 	bool isPlayerReady(int idx);
 	void readyToStartPlay();
-	void playerArrive();
+
+	bool playerArrive(SOCKET& socket);
 };
 
 // TMP using in 
@@ -207,7 +256,7 @@ struct C2SPacket
 	InfoBullet Bullets[MAX_BULLET];
 };
 
-int recvn(SOCKET s, char *buf, int len, int flags);
+
 
 
 // TODO: 프로그램에 필요한 추가 헤더는 여기에서 참조합니다.
