@@ -36,7 +36,7 @@ ServerFrameWork g_server;
 int main()
 {
 	int retval;
-	int cnt = MAX_PLAYER;
+	int cnt = 0;
 	//	윈속 초기화
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
@@ -63,43 +63,48 @@ int main()
 	SOCKADDR_IN clientaddr;
 	HANDLE hThread;
 	int addrlen;
-	Room_Player p;
-	p.roomNum = 0;
+	Room_Player p[MAX_PLAYER];
+	for(int i=0;i<MAX_PLAYER;++i)
+		p[i].roomNum = 0;
+
 	//HANDLE hHandle[5];
 	HANDLE hTmp;
 	//int i = 0;
 	while (true) {
-		g_server.InitRoom(p.roomNum);
+		g_server.InitRoom(p[0].roomNum);
 		while (true) {
 			//	accept()
-			if (cnt == 0)break;
+			if (cnt == MAX_PLAYER)break;
 			addrlen = sizeof(clientaddr);
 			client_sock = accept(listen_sock, (SOCKADDR*)&clientaddr, &addrlen);
-			if (client_sock == INVALID_SOCKET)
-			{
+			if (client_sock == INVALID_SOCKET){
 				err_display("accept()");
 				break;
 			}
-			p.playerNum = MAX_PLAYER - cnt--;
-			printf("Player Number=%d\n", p.playerNum);
+			p[cnt].playerNum = cnt;
+			printf("Player Number=%d\n", p[cnt].playerNum);
 			//	접속한 클라이언트 정보 출력
 			printf("\n[TCP 서버] 클라이언트 접속: IP 주소=%s, 포트 번호=%d\n",
 				inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 
-			g_server.SetSocket(p.roomNum, p.playerNum, client_sock);
-
-			hTmp = CreateThread(NULL, 0, g_server.CommunicationPlayer, (LPVOID)&p, 0, NULL);
-			CloseHandle(hTmp);
+			g_server.SetSocket(p[cnt].roomNum, p[cnt].playerNum, client_sock);
+			cnt++;
 
 		}
-		hTmp = CreateThread(NULL, 0, g_server.GameThread, (LPVOID)p.roomNum, 0, NULL);
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			hTmp = CreateThread(NULL, 0, g_server.CommunicationPlayer, (LPVOID)&p[i], 0, NULL);
+			CloseHandle(hTmp);
+		}
+		hTmp = CreateThread(NULL, 0, g_server.GameThread, (LPVOID)p[0].roomNum, 0, NULL);
 		CloseHandle(hTmp);
 
-		g_server.GameStart(p.roomNum);
+		Sleep(10);
+		g_server.GameStart(p[0].roomNum);
 
-		p.roomNum++;
-		cnt = MAX_PLAYER;
-		if (p.roomNum >= MAXROOMCOUNT)
+		for (int i = 0; i < MAX_PLAYER; ++i)p[i].roomNum++;
+
+		cnt = 0;
+		if (p[0].roomNum > MAXROOMCOUNT)
 			break;
 		//break;
 	}

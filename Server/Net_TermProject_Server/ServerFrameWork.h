@@ -5,8 +5,6 @@ struct argument {
 	int member = 0;
 };
 
-
-
 class ServerFrameWork
 {
 	static Room room[MAXROOMCOUNT];
@@ -35,10 +33,10 @@ public:	// Àç¿í
 	void checkRoomsState();
 
 	public:
-		void SetSocket(int RoomNumber, int PlayerId, SOCKET socket);
-		void InitRoom(int RoomNumber);
-		void GameStart(int RoomNumber);
-		void CloseRoom(int RoomNumber);
+		void SetSocket(int roomIndex, int PlayerId, SOCKET socket);
+		void InitRoom(int roomIndex);
+		void GameStart(int roomIndex);
+		void CloseRoom(int roomIndex);
 public:
 	//	Using in Thread Function
 	static DWORD WINAPI GameThread(LPVOID arg);
@@ -47,7 +45,7 @@ public:
 
 	static int ReceivePacketFromClient(int roomNum,int PlayerID);
 	static void SendPacketToClient(S2CPacket* packet,int roomNum);
-
-
+	static void Calculate(int roomNum);
+	static inline void FixFrame(int roomNum);
 };
 

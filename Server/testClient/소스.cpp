@@ -4,7 +4,7 @@
 #define SERVERIP	"127.0.0.1"
 #define	SERVERPORT	9000
 #define BUFSIZE		512
-
+char serverip[256];
 // 소켓 함수 오류 출력 후 종료
 void err_quit(char *msg)
 {
@@ -38,6 +38,8 @@ int main(int argc, char* argv[])
 	int pi;
 	::printf("플레이어 입력: ");
 	scanf("%d", &pi);
+	//::printf("Ip주소 입력 xxx.xxx.xxx.xxx\n");
+	//::scanf("%s", &serverip);
 	//	윈속 초기화
 	WSADATA wsa;
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
@@ -70,16 +72,25 @@ int main(int argc, char* argv[])
 	player[pi].m_hp = 10 + pi;
 	player[pi].m_pos = Vector2D(100+pi, 100+pi);
 
-	bullets[pi]->m_pos = Vector2D(100 + pi, 100 + pi);
-	bullets[pi]->m_type = 10 + pi;
+	bullets[pi][0].m_pos = Vector2D(100 + pi, 100 + pi);
+	bullets[pi][0].m_type = 10 + pi;
+	for (int i = 1; i < MAX_BULLET; ++i)
+	{
+		DestroyBullet(&bullets[pi][i]);
+	}
 
-	::printf("[%d]  hp = %d, pos = %f %f\n", pi, player[pi].m_hp, player[pi].m_pos.x, player[pi].m_pos.y);
+	::printf("player [%d]  hp = %d, pos = %f %f\n", pi, player[pi].m_hp, player[pi].m_pos.x, player[pi].m_pos.y);
+	::printf("bullets \n");
+	for (int i = 0; i < MAX_BULLET; ++i){
+		::printf("pos = %f %f\n", bullets[pi][i].m_pos.x, bullets[pi][i].m_pos.y);
+	}
+	::printf("\n");
 
 	//	서버와 데이터 통신
 	while (1) {
 		int len;
 		memcpy(&c2spacket.player, &player[pi], sizeof(InfoPlayer));
-		memcpy(&c2spacket.Bullets, &bullets[pi], sizeof(InfoBullet));
+		memcpy(&c2spacket.Bullets, &bullets[pi], sizeof(InfoBullet)*MAX_BULLET);
 
 		retval = send(sock, (char*)&c2spacket, sizeof(C2SPacket), 0);
 		if (retval == SOCKET_ERROR) {
@@ -101,13 +112,14 @@ int main(int argc, char* argv[])
 		for (int i = 0; i < MAX_PLAYER; ++i)
 		{
 			memcpy(&player[i], &s2cpacket.iPlayer[i], sizeof(InfoPlayer));
-			memcpy(&bullets[i], &s2cpacket.iBullet[i], sizeof(InfoBullet));
+			memcpy(&bullets[i], &s2cpacket.iBullet[i], sizeof(InfoBullet)*MAX_BULLET);
 		}
 		for (int i = 0; i < MAX_PLAYER; ++i)
 		{
-			::printf("[%d]  hp = %d", i, s2cpacket.iPlayer[i].m_hp);
+			::printf("[%d] hp = %d /", i, s2cpacket.iPlayer[i].m_hp);
 		}
-		printf("\n");
+		::printf("\n");
+		player[pi].m_pos.x += 0.016;
 	}
 
 	//	close_socket()
