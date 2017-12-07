@@ -27,6 +27,8 @@ public:
 	virtual void specialKeyUp(int key, int x, int y) = 0;
 
 	virtual void changeScene(int idx);
+	virtual int getPlayerNum() { return 0; }
+	virtual void setPlayerNum(int i) { ; }
 };
 
 class TitleScene : public Scene
@@ -61,6 +63,7 @@ public:
 	int			retval;
 	char		ipAddr[BUFSIZE];
 	int			m_myTeamNo;
+	
 
 	//--------------------for Test----------------------
 	bool		m_lightOn;
@@ -88,12 +91,16 @@ public:
 	virtual bool accessLobby();
 
 	virtual void leaveServer();
+
+	virtual int getPlayerNum() { return m_myTeamNo; }
 };
 
 class PlayScene : public Scene
 {
 private:
 	ObjectManager* m_objMng;
+	HANDLE			hThread;
+	int				m_myTeam_No = 1;
 public:
 	PlayScene();
 	PlayScene(Framework *pFramework);
@@ -110,4 +117,9 @@ public:
 	virtual void keyUp(unsigned char key, int x, int y);
 	virtual void specialKeyDown(int key, int x, int y);
 	virtual void specialKeyUp(int key, int x, int y);
+	virtual int getPlayerNum() { return m_myTeam_No; }
+	virtual void setPlayerNum(int i) { m_objMng->setPlayerNum(i); m_myTeam_No = i; }
 };
+
+
+//DWORD WINAPI communicateThreadFunc(LPVOID arg);

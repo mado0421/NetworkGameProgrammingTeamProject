@@ -36,6 +36,7 @@ void PlayScene::initialize()
 {
 	m_objMng = new ObjectManager();
 	m_objMng->initialize();
+//	hThread = CreateThread(NULL, 0, communicateThreadFunc, (void*)m_objMng, 0, NULL);
 }
 
 void PlayScene::leave()
@@ -56,11 +57,11 @@ void PlayScene::mouseInput(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
-		m_objMng->addBullet(x, y, PLAYER_0);
+		m_objMng->addBullet(x, y, m_myTeam_No);
 	}
 	else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
 	{
-		m_objMng->reloadAmmo(PLAYER_0);
+		m_objMng->reloadAmmo(m_myTeam_No);
 	}
 	else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN)
 	{
@@ -80,19 +81,19 @@ void PlayScene::keyDown(unsigned char key, int x, int y)
 		break;
 	case 'w':
 	case 'W':
-		m_objMng->changePlayerDirection('y', 1, PLAYER_0);
+		m_objMng->changePlayerDirection('y', 1, m_myTeam_No);
 		break;
 	case 's':
 	case 'S':
-		m_objMng->changePlayerDirection('y', -1, PLAYER_0);
+		m_objMng->changePlayerDirection('y', -1, m_myTeam_No);
 		break;
 	case 'a':
 	case 'A':
-		m_objMng->changePlayerDirection('x', -1, PLAYER_0);
+		m_objMng->changePlayerDirection('x', -1, m_myTeam_No);
 		break;
 	case 'd':
 	case 'D':
-		m_objMng->changePlayerDirection('x', 1, PLAYER_0);
+		m_objMng->changePlayerDirection('x', 1, m_myTeam_No);
 		break;
 	default:
 		break;
@@ -106,23 +107,23 @@ void PlayScene::keyUp(unsigned char key, int x, int y)
 	case 'w':
 	case 'W':
 		/*w키가 눌려있을 때 w키를 떼면 방향 값을 0으로 한다.*/
-		if (1 == m_objMng->getPlayerDirection('y', PLAYER_0))
-			m_objMng->changePlayerDirection('y', 0, PLAYER_0);
+		if (1 == m_objMng->getPlayerDirection('y', m_myTeam_No))
+			m_objMng->changePlayerDirection('y', 0, m_myTeam_No);
 		break;
 	case 's':
 	case 'S':
-		if (-1 == m_objMng->getPlayerDirection('y', PLAYER_0))
-			m_objMng->changePlayerDirection('y', 0, PLAYER_0);
+		if (-1 == m_objMng->getPlayerDirection('y', m_myTeam_No))
+			m_objMng->changePlayerDirection('y', 0, m_myTeam_No);
 		break;
 	case 'a':
 	case 'A':
-		if (-1 == m_objMng->getPlayerDirection('x', PLAYER_0))
-			m_objMng->changePlayerDirection('x', 0, PLAYER_0);
+		if (-1 == m_objMng->getPlayerDirection('x', m_myTeam_No))
+			m_objMng->changePlayerDirection('x', 0, m_myTeam_No);
 		break;
 	case 'd':
 	case 'D':
-		if (1 == m_objMng->getPlayerDirection('x', PLAYER_0))
-			m_objMng->changePlayerDirection('x', 0, PLAYER_0);
+		if (1 == m_objMng->getPlayerDirection('x', m_myTeam_No))
+			m_objMng->changePlayerDirection('x', 0, m_myTeam_No);
 		break;
 	default:
 		break;
@@ -388,3 +389,51 @@ void Scene::changeScene(int idx)
 {
 	m_pFramework->changeScene(idx);
 }
+
+InfoPlayer p[4];
+InfoBullet b[72];
+C2SPacket c2spacket;
+S2CPacket s2cpacket;
+std::chrono::system_clock::time_point start;
+std::chrono::duration<double> sec;
+
+//DWORD WINAPI communicateThreadFunc(LPVOID arg)
+//{
+//	int retval;
+//	start = std::chrono::system_clock::now();
+//	int msg = 0;
+//
+//	//send: 저 접속했어요 메시지, 필요 없을 수 있음
+//	while (msg != ENDGAME)
+//	{
+//		sec = std::chrono::system_clock::now() - start;
+//		if (sec.count()>1 / 60)
+//		{
+//			memcpy(&(c2spacket.player), p, sizeof(InfoPlayer) * 4);
+//			send(sock, (char*)&c2spacket, sizeof(C2SPacket), 0);
+//			//retval = recvn(sock, (char*)&msg, MSGSIZE, 0);
+//			switch (msg)
+//			{
+//			case DATA:
+//				retval = recvn(sock, (char*)&s2cpacket, sizeof(S2CPacket), 0);
+//				memcpy(p, &(s2cpacket.iPlayer), sizeof(InfoPlayer) * 4);
+//				//printf("%f, %f", p[1].m_pos.x, p[1].m_pos.y);
+//				//memcpy(p, data, sizeof(InfoPlayer) * 4);
+//				framework.updatePlayerInfo(p);
+//				break;
+//			case STARTGAME:
+//				//pFramework->ChangeScene(PlayScene);
+//				break;
+//			case ENDGAME:
+//				//pFramework->ChangeScene(TitleScene);
+//				break;
+//			}
+//			/*memcpy(&(c2spacket.player), p, sizeof(InfoPlayer) * 4);
+//			send(sock, (char*)&c2spacket, sizeof(C2SPacket), 0);*/
+//			start = std::chrono::system_clock::now();
+//		}
+//	}
+//	closesocket(sock);
+//	WSACleanup();
+//	return 0;
+//}

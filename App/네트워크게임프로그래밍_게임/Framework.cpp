@@ -30,8 +30,8 @@ GLvoid Framework::initialize(int argc, char **argv)
 	m_scenes[SceneType::Lobby] = new LobbyScene(this);
 	m_scenes[SceneType::Play] = new PlayScene(this);
 
-	m_currentScene = m_scenes[SceneType::Title];
-//	m_currentScene = m_scenes[SceneType::Play];
+//	m_currentScene = m_scenes[SceneType::Title];
+	m_currentScene = m_scenes[SceneType::Play];
 	m_currentScene->initialize();
 }
 
@@ -124,6 +124,7 @@ GLvoid Framework::specialKeyUp(int key, int x, int y)
 
 bool Framework::changeScene(int idx)
 {
+	int playerNumber;
 	switch (idx)
 	{
 	case SceneType::Title:
@@ -135,8 +136,10 @@ bool Framework::changeScene(int idx)
 		m_currentScene = m_scenes[SceneType::Lobby];
 		break;
 	case SceneType::Play:
+		playerNumber = m_currentScene->getPlayerNum();
 		m_currentScene->leave();
 		m_currentScene = m_scenes[SceneType::Play];
+		m_currentScene->setPlayerNum(playerNumber);
 		break;
 	default:
 		return false;
