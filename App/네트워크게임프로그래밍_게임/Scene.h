@@ -2,8 +2,10 @@
 #include "ObjectManager.h"
 
 #define MAX_KEY 256
-extern HANDLE hCommunicateEvent;
-extern HANDLE hUpdateEvent;
+//extern HANDLE hCommunicateEvent;
+//extern HANDLE hUpdateEvent;
+//extern C2SPacket c2spacket;
+//extern S2CPacket s2cpacket;
 class Framework;
 
 class Scene
@@ -96,7 +98,6 @@ private:
 	NetworkData		*m_networkData = NULL;
 	ObjectManager*  m_objMng;
 	HANDLE			hThread;
-
 	int				m_myTeam_No = 1;
 public:
 	PlayScene();

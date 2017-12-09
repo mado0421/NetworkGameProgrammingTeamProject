@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "ObjectManager.h"
-
+C2SPacket c2spacket;
+S2CPacket s2cpacket;
 HANDLE			hCommunicateEvent;
 HANDLE			hUpdateEvent;
 ObjectManager::ObjectManager()
@@ -87,6 +88,7 @@ void ObjectManager::addBullet(float x, float y, int team)
 			break;
 		}
 	}
+	updatePlayerInfoFirst();
 }
 
 void ObjectManager::reloadAmmo(int team)
@@ -179,7 +181,7 @@ void ObjectManager::update(float elapsedTime)
 		}
 		m_myBulletList[i].update(elapsedTime);
 	}
-	
+	updatePlayerInfo();
 	//for (auto p = m_itemList.begin(); p != m_itemList.end(); ++p)
 	//{
 	//	if (p->isDead())
@@ -206,43 +208,45 @@ void ObjectManager::render()
 
 }
 
-void ObjectManager::updatePlayerInfo(InfoPlayer* c2sp, InfoBullet* c2sb, InfoPlayer* s2cp, InfoBullet* s2cb)
+void ObjectManager::updatePlayerInfo()
 {
+	printf("update1::player1.bullet.x: %f\n", m_myBulletList[0].getPos().x);
 	for (int i = 0, k = 0; i < 4; ++i, ++k)
 	{
 		if (i == m_myTeamNo)
 		{
 			for (int j = 0; j < MAX_BULLET; ++j)
 			{
-				if (s2cb[i*MAX_BULLET + j].m_pos.x == INVALID)
+				if (s2cpacket.iBullet[i][j].m_pos.x == INVALID)
 				{
-					m_myBulletList[j].setPos(s2cb[i*MAX_BULLET + j].m_pos);
+					m_myBulletList[j].setPos(s2cpacket.iBullet[i][j].m_pos);
 					m_myBulletList[j].setDirection(Vector2D(0, 0));
 				}
 			}
 			--k;
 			continue;
 		}
-		m_playerList[i].setPos(s2cp[i].m_pos);
-		m_playerList[i].setHp(s2cp[i].m_hp);
+		m_playerList[i].setPos(s2cpacket.iPlayer[i].m_pos);
+		m_playerList[i].setHp(s2cpacket.iPlayer[i].m_hp);
 		for (int j = 0; j < MAX_BULLET; ++j)
 		{
 			m_OtherBulletList[k*MAX_BULLET + j].setTeam(5);
-			m_OtherBulletList[k*MAX_BULLET + j].setPos(s2cb[i*MAX_BULLET + j].m_pos);
+			m_OtherBulletList[k*MAX_BULLET + j].setPos(s2cpacket.iBullet[i][j].m_pos);
 		}
 		//printf("%f,%f\n", m_playerList[i].getPos().x, m_playerList[i].getPos().y);
 	}
-	c2sp[0].m_pos = m_playerList[m_myTeamNo].getPos();
-	c2sp[0].m_hp = m_playerList[m_myTeamNo].getHp();
+	c2spacket.player.m_pos = m_playerList[m_myTeamNo].getPos();
+	c2spacket.player.m_hp = m_playerList[m_myTeamNo].getHp();
 	for (int i = 0; i < MAX_BULLET; ++i)
-		c2sb[i].m_pos = m_myBulletList[i].getPos();
+		c2spacket.Bullets[i].m_pos = m_myBulletList[i].getPos();
+	printf("update2::player1.bullet.x: %f\n", m_myBulletList[0].getPos().x);
 }
 
-void ObjectManager::updatePlayerInfoFirst(InfoPlayer* c2sp, InfoBullet* c2sb, InfoPlayer* s2cp, InfoBullet* s2cb)
+void ObjectManager::updatePlayerInfoFirst()
 {
-	c2sp[0].m_pos = m_playerList[m_myTeamNo].getPos();
-	c2sp[0].m_hp = m_playerList[m_myTeamNo].getHp();
+	c2spacket.player.m_pos = m_playerList[m_myTeamNo].getPos();
+	c2spacket.player.m_hp = m_playerList[m_myTeamNo].getHp();
 	for (int i = 0; i < MAX_BULLET; ++i)
-		c2sb[i].m_pos = m_myBulletList[i].getPos();
+		c2spacket.Bullets[i].m_pos = m_myBulletList[i].getPos();
 }
 

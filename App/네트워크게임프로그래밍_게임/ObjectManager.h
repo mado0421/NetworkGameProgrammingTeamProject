@@ -2,7 +2,8 @@
 #include "Object.h"
 extern HANDLE hCommunicateEvent;
 extern HANDLE hUpdateEvent;
-
+extern C2SPacket c2spacket;
+extern S2CPacket s2cpacket;
 class ObjectManager
 {
 private:
@@ -29,8 +30,8 @@ public:
 	void update(float elapsedTime);
 	void render();
 
-	void updatePlayerInfo(InfoPlayer* c2sp, InfoBullet* c2sb, InfoPlayer* s2cp, InfoBullet* s2cb);
-	void updatePlayerInfoFirst(InfoPlayer* c2sp, InfoBullet* c2sb, InfoPlayer* s2cp, InfoBullet* s2cb);
+	void updatePlayerInfo();
+	void updatePlayerInfoFirst();
 	void setPlayerNum(int number) { m_myTeamNo = number; }
 	Bullet* getBulletList() { return m_myBulletList; }
 };

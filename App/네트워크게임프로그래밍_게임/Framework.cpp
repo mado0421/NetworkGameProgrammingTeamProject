@@ -50,6 +50,8 @@ GLvoid Framework::run(GLvoid)
 
 GLvoid Framework::renderScene(GLvoid)
 {
+	if (m_currentScene == m_scenes[SceneType::Play])
+		WaitForSingleObject(hUpdateEvent, INFINITE);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.7f, 0.7f, 0.9f, 1.0f);
@@ -59,12 +61,13 @@ GLvoid Framework::renderScene(GLvoid)
 	curTime = timeGetTime();
 
 	float elapsedTime = (curTime - prevTime)*0.001;
-	if (elapsedTime > (1.0 / 60))
+	if (elapsedTime > (1.0/60))
 	{
 		m_currentScene->update(elapsedTime);
 		prevTime = curTime;
+		SetEvent(hCommunicateEvent);
+		ResetEvent(hUpdateEvent);
 	}
-
 	glutSwapBuffers();
 }
 
@@ -89,9 +92,14 @@ GLvoid Framework::idle(GLvoid)
 
 GLvoid Framework::mouseInput(int button, int state, int x, int y)
 {
+	if (m_currentScene == m_scenes[SceneType::Play])
+		WaitForSingleObject(hUpdateEvent, INFINITE);
 	m_currentScene->mouseInput(button, state, x, WHEIGHT - y);
-
-	renderScene();
+	printf("mouseInput1::player1.bullet.x: %f\n", c2spacket.Bullets[0].m_pos.x);
+	//renderScene();
+	printf("mouseInput2::player1.bullet.x: %f\n", c2spacket.Bullets[0].m_pos.x);
+	SetEvent(hCommunicateEvent);
+	ResetEvent(hUpdateEvent);
 }
 
 GLvoid Framework::keyDown(unsigned char key, int x, int y)

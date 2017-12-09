@@ -183,10 +183,15 @@ DWORD ServerFrameWork::CommunicationPlayer(LPVOID arg)
 int ServerFrameWork::ReceivePacketFromClient(int roomNum, int PlayerID)
 {
 	//InfoTeam *team = &room[roomNum].m_teamList[PlayerID];
+	
 	C2SPacket packet;
 	ZeroMemory(&packet, sizeof(C2SPacket));
 	int retval;
 	retval = recvn(TeamList(roomNum, PlayerID).m_socket, (char*)&packet, sizeof(C2SPacket), 0);
+	if (PlayerID == 0)
+	{
+		printf("player1.bullet.x: %f\n", packet.Bullets[0].m_pos.x);
+	}
 	if (retval == SOCKET_ERROR)
 		return SOCKET_ERROR;
 	//printf("ReceivePacketFromClient room:%d, PlayerId:%d, retval = %d\n", roomNum, PlayerID, retval);
