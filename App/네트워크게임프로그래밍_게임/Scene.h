@@ -2,7 +2,8 @@
 #include "ObjectManager.h"
 
 #define MAX_KEY 256
-extern InfoBullet b[72];
+extern HANDLE hCommunicateEvent;
+extern HANDLE hUpdateEvent;
 class Framework;
 
 class Scene
@@ -95,6 +96,7 @@ private:
 	NetworkData		*m_networkData = NULL;
 	ObjectManager*  m_objMng;
 	HANDLE			hThread;
+
 	int				m_myTeam_No = 1;
 public:
 	PlayScene();

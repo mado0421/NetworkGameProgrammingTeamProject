@@ -1,12 +1,14 @@
 #include "stdafx.h"
 #include "ObjectManager.h"
 
-
+HANDLE			hCommunicateEvent;
+HANDLE			hUpdateEvent;
 ObjectManager::ObjectManager()
 {
 	for (int i = 0; i < MAX_BULLET; ++i)
 	{
 		m_myBulletList[i].setPos(Vector2D(INVALID,0));
+		m_myBulletList[i].setDirection(Vector2D(0, 0));
 	}
 	for (int i = 0; i < MAX_BULLET * 3; ++i)
 	{
@@ -70,10 +72,16 @@ void ObjectManager::addBullet(float x, float y, int team)
 			{
 				/*m_bulletList.emplace_back(p->getPos(),
 				Vector::normalize(Vector2D(Vector::sub(p->getPos(), Vector2D(x, y)))), PLAYER_0);*/
-				m_myBulletList[m_bulletCount] = Bullet(p->getPos(),
-					Vector::normalize(Vector2D(Vector::sub(p->getPos(), Vector2D(x, y)))), PLAYER_0);
-				b[m_myTeamNo*MAX_BULLET + m_bulletCount].m_pos = m_myBulletList[m_bulletCount].getPos();
-				m_bulletCount++;
+				for (int i = 0; i < MAX_BULLET; ++i)
+				{
+					if (m_myBulletList[i].getPos().x == INVALID)
+					{
+						m_myBulletList[i] = Bullet(p->getPos(),
+							Vector::normalize(Vector2D(Vector::sub(p->getPos(), Vector2D(x, y)))), PLAYER_0);
+						//b[m_myTeamNo*MAX_BULLET + i].m_pos = m_myBulletList[i].getPos();
+						break;
+					}
+				}
 				p->fire();
 			}
 			break;
@@ -122,25 +130,6 @@ void ObjectManager::update(float elapsedTime)
 	{
 		/*충돌검사*/
 		int team = p->getTeam();
-		/*for (auto bp = m_bulletList.begin(); bp != m_bulletList.end(); ++bp)
-		{
-		if (bp->getTeam() != team)
-		{
-		if (p->isCollide(*bp))
-		{
-		p->addHp(-1);
-		bp->addHp(-1);
-		}
-		}
-		}*/
-
-		//for (auto ip = m_itemList.begin(); ip != m_itemList.end(); ++ip)
-		//{
-		//	if (p->isCollide(*ip))
-		//	{
-		//		ip->addHp(-1);
-		//	}
-		//}
 		for (auto tp = m_tileList.cbegin(); tp != m_tileList.cend(); ++tp)
 		{
 			if (tp->getType() == tile::Wall)
@@ -152,18 +141,18 @@ void ObjectManager::update(float elapsedTime)
 			}
 		}
 		/*체력검사*/
-		if (p->isDead())
+		/*if (p->isDead())
 		{
 			p = m_playerList.erase(p);
 			if (p == m_playerList.end()) break;
 			continue;
-		}
+		}*/
 
 		/*업데이트*/
 		p->update(elapsedTime);
 	}
 
-	for (int i = 0; i<m_bulletCount; ++i)
+	for (int i = 0; i<MAX_BULLET; ++i)
 	{
 		for (auto tp = m_tileList.cbegin(); tp != m_tileList.cend(); ++tp)
 		{
@@ -178,25 +167,19 @@ void ObjectManager::update(float elapsedTime)
 
 		if (m_myBulletList[i].isDead())
 		{
-			m_bulletCount--;
-			for (int j = i; j < MAX_BULLET-1; ++j)
-			{
-				m_myBulletList[j] = m_myBulletList[j + 1];
-			}
+			m_myBulletList[i].setPos(Vector2D(INVALID, 0));
+			m_myBulletList[i].setDirection(Vector2D(0, 0));
 			continue;
 		}
 		if (m_myBulletList[i].isOut())
 		{
-			m_bulletCount--;
-			for (int j = i; j < MAX_BULLET - 1; ++j)
-			{
-				m_myBulletList[j] = m_myBulletList[j + 1];
-			}
+			m_myBulletList[i].setPos(Vector2D(INVALID, 0));
+			m_myBulletList[i].setDirection(Vector2D(0, 0));
 			continue;
 		}
 		m_myBulletList[i].update(elapsedTime);
 	}
-
+	
 	//for (auto p = m_itemList.begin(); p != m_itemList.end(); ++p)
 	//{
 	//	if (p->isDead())
@@ -208,12 +191,13 @@ void ObjectManager::update(float elapsedTime)
 
 	//	p->update(elapsedTime);
 	//}
+	//통신 쓰레드 이벤트 생성 및 깨우기
 }
 
 void ObjectManager::render()
 {
 	for (auto p = m_playerList.cbegin(); p != m_playerList.cend(); ++p) p->render();
-	for (int i = 0; i<m_bulletCount; ++i)
+	for (int i = 0; i<MAX_BULLET; ++i)
 		m_myBulletList[i].render();
 	for (int i = 0; i < MAX_BULLET * 3; ++i)
 		m_OtherBulletList[i].render();
@@ -222,24 +206,43 @@ void ObjectManager::render()
 
 }
 
-void ObjectManager::updatePlayerInfo(InfoPlayer * p, InfoBullet* b)
+void ObjectManager::updatePlayerInfo(InfoPlayer* c2sp, InfoBullet* c2sb, InfoPlayer* s2cp, InfoBullet* s2cb)
 {
 	for (int i = 0, k = 0; i < 4; ++i, ++k)
 	{
 		if (i == m_myTeamNo)
 		{
+			for (int j = 0; j < MAX_BULLET; ++j)
+			{
+				if (s2cb[i*MAX_BULLET + j].m_pos.x == INVALID)
+				{
+					m_myBulletList[j].setPos(s2cb[i*MAX_BULLET + j].m_pos);
+					m_myBulletList[j].setDirection(Vector2D(0, 0));
+				}
+			}
 			--k;
 			continue;
 		}
-		m_playerList[i].setPos(p[i].m_pos);
+		m_playerList[i].setPos(s2cp[i].m_pos);
+		m_playerList[i].setHp(s2cp[i].m_hp);
 		for (int j = 0; j < MAX_BULLET; ++j)
 		{
 			m_OtherBulletList[k*MAX_BULLET + j].setTeam(5);
-			m_OtherBulletList[k*MAX_BULLET + j].setPos(b[i*MAX_BULLET + j].m_pos);
+			m_OtherBulletList[k*MAX_BULLET + j].setPos(s2cb[i*MAX_BULLET + j].m_pos);
 		}
 		//printf("%f,%f\n", m_playerList[i].getPos().x, m_playerList[i].getPos().y);
 	}
-	p[m_myTeamNo].m_pos = m_playerList[m_myTeamNo].getPos();
+	c2sp[0].m_pos = m_playerList[m_myTeamNo].getPos();
+	c2sp[0].m_hp = m_playerList[m_myTeamNo].getHp();
 	for (int i = 0; i < MAX_BULLET; ++i)
-		b[m_myTeamNo*MAX_BULLET + i].m_pos = m_myBulletList[i].getPos();
+		c2sb[i].m_pos = m_myBulletList[i].getPos();
 }
+
+void ObjectManager::updatePlayerInfoFirst(InfoPlayer* c2sp, InfoBullet* c2sb, InfoPlayer* s2cp, InfoBullet* s2cb)
+{
+	c2sp[0].m_pos = m_playerList[m_myTeamNo].getPos();
+	c2sp[0].m_hp = m_playerList[m_myTeamNo].getHp();
+	for (int i = 0; i < MAX_BULLET; ++i)
+		c2sb[i].m_pos = m_myBulletList[i].getPos();
+}
+

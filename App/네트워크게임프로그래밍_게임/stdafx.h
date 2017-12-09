@@ -109,17 +109,17 @@ namespace Vector
 struct InfoPlayer {
 	Vector2D m_pos;
 	int m_hp;
-	int m_state;
+	//int m_state;
 };
 
 struct InfoBullet {
 	Vector2D m_pos;
-	int m_type;
+	//int m_type;
 };
 
 struct InfoItem {
 	Vector2D m_pos;
-	int m_type;
+	//int m_type;
 };
 
 struct InfoTeam {
@@ -182,11 +182,11 @@ struct startData {
 };
 
 struct S2CPacket {	// Server to Client Packet 구조체 실제 데이터를 서버에서 보낼
-	DWORD	Message;	//	HIWORD 메시지 타입
+//	DWORD	Message;	//	HIWORD 메시지 타입
 						//	0번 Data, 1번 게임시작, 2번 게임종료…
 	InfoPlayer iPlayer[MAX_PLAYER];
 	InfoBullet iBullet[MAX_PLAYER][MAX_BULLET];
-	std::chrono::system_clock::time_point SendTime;
+	//std::chrono::system_clock::time_point SendTime;
 
 };
 

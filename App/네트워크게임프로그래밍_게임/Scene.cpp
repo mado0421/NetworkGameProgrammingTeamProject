@@ -1,6 +1,10 @@
 #include "stdafx.h"
 #include "Scene.h"
 #include "Framework.h"
+C2SPacket c2spacket;
+S2CPacket s2cpacket;
+std::chrono::system_clock::time_point start;
+std::chrono::duration<double> sec;
 
 
 Scene::Scene()
@@ -315,6 +319,8 @@ void PlayScene::initialize(void* data)
 	m_myTeam_No = m_networkData->m_myTeamNo;
 	m_objMng = new ObjectManager();
 	m_objMng->initialize(m_networkData->m_myTeamNo);
+	hCommunicateEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	hUpdateEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	hThread = CreateThread(NULL, 0, communicateThreadFunc, (void*)this, 0, NULL);
 }
 
@@ -325,7 +331,11 @@ void PlayScene::leave()
 
 void PlayScene::update(float elapsedTime)
 {
+	WaitForSingleObject(hUpdateEvent, INFINITE);
 	m_objMng->update(elapsedTime);
+	SetEvent(hCommunicateEvent);
+	ResetEvent(hUpdateEvent);
+	printf("player1.bullet.x: %f\n", (m_objMng->getBulletList())[0].getPos().x);
 }
 
 void PlayScene::render()
@@ -346,9 +356,9 @@ void PlayScene::mouseInput(int button, int state, int x, int y)
 	else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN)
 	{
 		/*for Test*/
-
-
 	}
+	/*SetEvent(hCommunicateEvent);
+	ResetEvent(hUpdateEvent);*/
 }
 
 void PlayScene::keyDown(unsigned char key, int x, int y)
@@ -419,12 +429,8 @@ void PlayScene::specialKeyUp(int key, int x, int y)
 }
 
 
-InfoPlayer p[4];
-InfoBullet b[72];
-C2SPacket c2spacket;
-S2CPacket s2cpacket;
-std::chrono::system_clock::time_point start;
-std::chrono::duration<double> sec;
+//InfoPlayer p[4];
+//InfoBullet b[72];
 
 DWORD WINAPI communicateThreadFunc(LPVOID arg)
 {
@@ -434,26 +440,28 @@ DWORD WINAPI communicateThreadFunc(LPVOID arg)
 	int msg = 0;
 	SOCKET sock = playScene->getNetworkData()->sock;
 	int num = playScene->getNetworkData()->m_myTeamNo;
-	//send: 저 접속했어요 메시지, 필요 없을 수 있음
+	playScene->getObjectManager()->updatePlayerInfoFirst(&(c2spacket.player), (InfoBullet*)(&c2spacket.Bullets), (InfoPlayer*)(&s2cpacket.iPlayer), (InfoBullet*)(&s2cpacket.iBullet));
+	//이건 씬 생성시로 옮겨도 될 듯
 	while (msg != ENDGAME)
 	{
 		sec = std::chrono::system_clock::now() - start;
-		if (sec.count()>1 / 60)
+		//if (sec.count()>1 / 60)
 		{
 			//memcpy(&(c2spacket.player), p, sizeof(InfoPlayer));
-			memcpy(&(c2spacket.player), &(p[num]), sizeof(InfoPlayer));
-			memcpy(&(c2spacket.Bullets), &(b[num*MAX_BULLET]), sizeof(InfoBullet)*MAX_BULLET);
+			/*memcpy(&(c2spacket.player), &(p[num]), sizeof(InfoPlayer));
+			memcpy(&(c2spacket.Bullets), &(b[num*MAX_BULLET]), sizeof(InfoBullet)*MAX_BULLET);*/
 			send(sock, (char*)&c2spacket, sizeof(C2SPacket), 0);
 			//retval = recvn(sock, (char*)&msg, MSGSIZE, 0);
 			switch (msg)
 			{
 			case DATA:
 				retval = recvn(sock, (char*)&s2cpacket, sizeof(S2CPacket), 0);
-				memcpy(p, &(s2cpacket.iPlayer), sizeof(InfoPlayer) * 4);
-				memcpy(b, &(s2cpacket.iBullet), sizeof(InfoBullet) * 72);
+				/*memcpy(p, &(s2cpacket.iPlayer), sizeof(InfoPlayer) * 4);
+				memcpy(b, &(s2cpacket.iBullet), sizeof(InfoBullet) * 72);*/
 				//printf("%f, %f", p[1].m_pos.x, p[1].m_pos.y);
 				//memcpy(p, data, sizeof(InfoPlayer) * 4);
-				playScene->getObjectManager()->updatePlayerInfo(p,b);
+				playScene->getObjectManager()->updatePlayerInfo(&(c2spacket.player), (InfoBullet*)(&c2spacket.Bullets), (InfoPlayer*)(&s2cpacket.iPlayer), (InfoBullet*)(&s2cpacket.iBullet));
+				//이걸 sc2packet을 바로 보내도 되지 않을까?
 				break;
 			case STARTGAME:
 				//pFramework->ChangeScene(PlayScene);
@@ -465,6 +473,9 @@ DWORD WINAPI communicateThreadFunc(LPVOID arg)
 			/*memcpy(&(c2spacket.player), p, sizeof(InfoPlayer) * 4);
 			send(sock, (char*)&c2spacket, sizeof(C2SPacket), 0);*/
 			start = std::chrono::system_clock::now();
+			ResetEvent(hCommunicateEvent);
+			SetEvent(hUpdateEvent);
+			WaitForSingleObject(hCommunicateEvent, INFINITE);
 		}
 	}
 	closesocket(sock);

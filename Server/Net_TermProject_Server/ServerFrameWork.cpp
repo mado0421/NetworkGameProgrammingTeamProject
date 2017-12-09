@@ -207,8 +207,8 @@ void ServerFrameWork::SendPacketToClient(S2CPacket * packet, int roomNum)
 	//	ConnectCheck? , Need Thread?
 	for (int i = 0; i < MAX_PLAYER; ++i)
 	{
-		packet->SendTime = chrono::system_clock::now();
-		packet->Message = 0;
+//		packet->SendTime = chrono::system_clock::now();
+//		packet->Message = 0;
 		send(client_sock[i], (char*)packet, sizeof(S2CPacket), 0);
 	}
 }
@@ -238,6 +238,7 @@ void ServerFrameWork::Calculate(int roomNum)
 				if (player->m_pos.x + PLAYERSIZE < bullet->m_pos.x - BULLETSIZE)continue;
 				if (player->m_pos.y - PLAYERSIZE > bullet->m_pos.y + BULLETSIZE)continue;
 				if (player->m_pos.y + PLAYERSIZE < bullet->m_pos.y - BULLETSIZE)continue;
+				printf("player:%f, %f\t bullet:%f, %f\n", player->m_pos.x, player->m_pos.y, bullet->m_pos.x, bullet->m_pos.y);
 
 				//	Collide Test ok
 				player->m_hp -= BULLETDAMAGE;

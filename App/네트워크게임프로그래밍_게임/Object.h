@@ -111,7 +111,7 @@ public:
 
 	int getTeam() const { return m_team; }
 	int getAmmo() const { return m_ammo; }
-
+	void setHp(int h) { m_hp = h; }
 	bool isCanFire() const { return m_ammo; }
 };
 

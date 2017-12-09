@@ -1,6 +1,7 @@
 #pragma once
 #include "Object.h"
-extern InfoBullet b[72];
+extern HANDLE hCommunicateEvent;
+extern HANDLE hUpdateEvent;
 
 class ObjectManager
 {
@@ -9,7 +10,6 @@ private:
 	//std::vector<Bullet> m_bulletList;
 	Bullet m_myBulletList[MAX_BULLET];
 	Bullet m_OtherBulletList[MAX_BULLET * 3];
-	int m_bulletCount = 0;
 	std::vector<Item>	m_itemList;
 	std::vector<Tile>	m_tileList;
 	int m_myTeamNo;
@@ -29,6 +29,8 @@ public:
 	void update(float elapsedTime);
 	void render();
 
-	void updatePlayerInfo(InfoPlayer* p, InfoBullet* b);
+	void updatePlayerInfo(InfoPlayer* c2sp, InfoBullet* c2sb, InfoPlayer* s2cp, InfoBullet* s2cb);
+	void updatePlayerInfoFirst(InfoPlayer* c2sp, InfoBullet* c2sb, InfoPlayer* s2cp, InfoBullet* s2cb);
 	void setPlayerNum(int number) { m_myTeamNo = number; }
+	Bullet* getBulletList() { return m_myBulletList; }
 };
