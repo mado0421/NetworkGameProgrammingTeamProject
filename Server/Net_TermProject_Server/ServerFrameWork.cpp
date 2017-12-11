@@ -88,7 +88,7 @@ void ServerFrameWork::GameEnd(int roomIndex)
 	}
 
 	for (int i = 0; i < MAX_PLAYER; ++i){
-		//packet.Message = end_data;
+		packet.Message = end_data;
 		send(client_sock[i], (char*)&packet, sizeof(S2CPacket), 0);
 	}
 	for (int i = 0; i < MAX_PLAYER; ++i)
@@ -263,7 +263,7 @@ void ServerFrameWork::SendPacketToClient(S2CPacket * packet, int roomNum)
 	for (int i = 0; i < MAX_PLAYER; ++i)
 	{
 		//packet->SendTime = chrono::system_clock::now();
-		//packet->Message = data;
+		packet->Message = data;
 		send(client_sock[i], (char*)packet, sizeof(S2CPacket), 0);
 	}
 }

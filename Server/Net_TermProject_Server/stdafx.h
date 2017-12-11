@@ -121,7 +121,7 @@ bool inline IsZero(float a) {
 }
 
 enum {
-	Lobby = false, Play = true, closing=4
+	Lobby = false, Play = true, closing = 4
 };
 
 struct Room
@@ -235,7 +235,7 @@ struct Room_Player
 
 struct S2CPacket
 {	// Server to Client Packet 구조체 실제 데이터를 서버에서 보낼
-	//DWORD	Message;	//	0번 Data, 1번 게임종료
+	DWORD	Message;	//	0번 Data, 1번 게임종료
 	InfoPlayer iPlayer[MAX_PLAYER];
 	InfoBullet iBullet[MAX_PLAYER][MAX_BULLET];
 //	chrono::system_clock::time_point SendTime;
