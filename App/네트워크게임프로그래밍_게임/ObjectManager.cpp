@@ -214,6 +214,7 @@ void ObjectManager::updatePlayerInfo()
 	printf("update1::player1.bullet.x: %f\n", m_myBulletList[0].getPos().x);
 	for (int i = 0, k = 0; i < 4; ++i, ++k)
 	{
+		m_playerList[i].setHp(s2cpacket.iPlayer[i].m_hp);
 		if (i == m_myTeamNo)
 		{
 			for (int j = 0; j < MAX_BULLET; ++j)
@@ -228,7 +229,6 @@ void ObjectManager::updatePlayerInfo()
 			continue;
 		}
 		m_playerList[i].setPos(s2cpacket.iPlayer[i].m_pos);
-		m_playerList[i].setHp(s2cpacket.iPlayer[i].m_hp);
 		for (int j = 0; j < MAX_BULLET; ++j)
 		{
 			m_OtherBulletList[k*MAX_BULLET + j].setTeam(5);

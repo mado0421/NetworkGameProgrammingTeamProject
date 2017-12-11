@@ -334,11 +334,8 @@ void PlayScene::leave()
 
 void PlayScene::update(float elapsedTime)
 {
-	
 	m_objMng->update(elapsedTime);
-	
-	
-}
+	}
 
 void PlayScene::render()
 {
