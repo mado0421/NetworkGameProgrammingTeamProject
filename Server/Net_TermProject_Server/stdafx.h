@@ -39,8 +39,11 @@ using namespace std;
 
 #define MAXROOMCOUNT	100
 #define THREADFREQ	0.016f
+#define ORDERFREQ	0.016f
 
-#define FIXFREQUENCY
+//#define DEBUGMODE
+
+//#define FIXFREQUENCY
 
 #define MSGSIZE 1
 int recvn(SOCKET s, char *buf, int len, int flags);
@@ -155,8 +158,8 @@ struct Room
 		m_clock = chrono::system_clock::now();
 		m_ElapsedTime += chrono::duration_cast<chrono::milliseconds>(m_clock - m_past).count()*0.001f;
 		m_past = m_clock;
-		//printf("Tick = %f\n", m_ElapsedTime);
-		//Sleep(1);
+		printf("Tick = %f\n", m_ElapsedTime);
+		Sleep(1);
 	};
 	void timeInit() {
 		m_past = chrono::system_clock::now();

@@ -11,10 +11,12 @@ class ServerFrameWork
 	static HANDLE hSendPacket[MAXROOMCOUNT][MAX_PLAYER];
 
 	static HANDLE hGameThread[MAXROOMCOUNT];
-	static HANDLE hNextThreadCall;
+	static HANDLE hThreadOrder;
+	static bool bOrder[MAXROOMCOUNT];
 
 	static std::vector<int> m_order;
 	static std::queue<int> m_delQueue;
+	static std::queue<int> m_insQueue;
 
 	//static HANDLE hroom[2];
 public:
@@ -46,6 +48,8 @@ public:
 	static DWORD WINAPI GameThread(LPVOID arg);
 	static DWORD WINAPI CommunicationPlayer(LPVOID arg);
 	static DWORD WINAPI ThreadOrder(LPVOID arg);
+	static chrono::system_clock::time_point t_order_start;
+	static chrono::system_clock::time_point t_order_end;
 
 	static int ReceivePacketFromClient(int roomNum,int PlayerID);
 	static void SendPacketToClient(S2CPacket* packet,int roomNum);

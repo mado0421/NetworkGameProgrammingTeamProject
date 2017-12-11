@@ -73,6 +73,8 @@ int main()
 			if (cnt == MAX_PLAYER)break;
 			addrlen = sizeof(clientaddr);
 			client_sock = accept(listen_sock, (SOCKADDR*)&clientaddr, &addrlen);
+			printf("\n[TCP 서버] 클라이언트 접속: IP 주소=%s, 포트 번호=%d\n",
+				inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 			if (client_sock == INVALID_SOCKET) {
 				err_display("accept()");
 				break;
@@ -83,7 +85,7 @@ int main()
 		}
 		g_server.InitRoom(roomIndex);
 
-		Sleep(10);
+		Sleep(100);
 		g_server.GameStart(roomIndex);
 
 	}

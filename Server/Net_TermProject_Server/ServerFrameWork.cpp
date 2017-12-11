@@ -8,10 +8,15 @@ HANDLE ServerFrameWork::hCommunicated[MAXROOMCOUNT][MAX_PLAYER];
 HANDLE ServerFrameWork::hSendPacket[MAXROOMCOUNT][MAX_PLAYER];
 
 HANDLE ServerFrameWork::hGameThread[MAXROOMCOUNT];
-HANDLE ServerFrameWork::hNextThreadCall;
+HANDLE ServerFrameWork::hThreadOrder;
 
 std::vector<int> ServerFrameWork::m_order;
 std::queue<int> ServerFrameWork::m_delQueue;
+std::queue<int> ServerFrameWork::m_insQueue;
+
+chrono::system_clock::time_point ServerFrameWork::t_order_start;
+chrono::system_clock::time_point ServerFrameWork::t_order_end;
+bool ServerFrameWork::bOrder[MAXROOMCOUNT];
 
 #define TEST_THREAD_COUNT 1
 #define TEST_CNT_COUNT	10000
@@ -21,11 +26,7 @@ ServerFrameWork::ServerFrameWork()
 {
 	ZeroMemory(room, sizeof(Room)*MAXROOMCOUNT);
 	m_order.reserve(MAXROOMCOUNT);
-	HANDLE hTmp;
-	hTmp = CreateThread(NULL, 0, ThreadOrder, 0, 0, NULL);
-	CloseHandle(hTmp);
-
-	hNextThreadCall = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hThreadOrder = CreateThread(NULL, 0, ThreadOrder, 0, 0, NULL);
 }
 
 ServerFrameWork::~ServerFrameWork()
@@ -40,7 +41,9 @@ ServerFrameWork::~ServerFrameWork()
 		}
 		CloseHandle(hGameThread[i]);
 	}
-	CloseHandle(hNextThreadCall);
+
+	TerminateThread(hThreadOrder, 0);
+	CloseHandle(hThreadOrder);
 }
 
 void ServerFrameWork::SetSocket(int RoomNumber, int PlayerId,SOCKET socket)
@@ -67,7 +70,9 @@ void ServerFrameWork::InitRoom(int roomIndex)
 		p[i].playerNum = i;
 		hTmp = CreateThread(NULL, 0, CommunicationPlayer, (LPVOID)&p[i], 0, NULL);
 		CloseHandle(hTmp);
+		Sleep(100);
 	}
+	Sleep(100);
 	hTmp = CreateThread(NULL, 0, GameThread, (LPVOID)roomIndex, 0, NULL);
 	CloseHandle(hTmp);
 	
@@ -79,10 +84,11 @@ void ServerFrameWork::GameStart(int roomIndex)
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		SetEvent(hSendPacket[roomIndex][i]);
 		//NOTUSESLEEP
-		//Sleep(1000);
+		Sleep(100);
 	}
-	m_order.push_back(roomIndex);
-	SetEvent(hNextThreadCall);
+	bOrder[roomIndex] = true;
+	m_insQueue.push(roomIndex);
+	//room[roomIndex].m_roomState = Play;
 	room[roomIndex].timeInit();
 	printf("room: %d GameStart\n", roomIndex);
 }
@@ -104,9 +110,9 @@ void ServerFrameWork::GameEnd(int roomIndex)
 		packet.Message = end_data;
 		send(client_sock[i], (char*)&packet, sizeof(S2CPacket), 0);
 	}
+	room[roomIndex].m_roomState = closing;
 	for (int i = 0; i < MAX_PLAYER; ++i)
 		SetEvent(hSendPacket[roomIndex][i]);
-	room[roomIndex].m_roomState = closing;
 
 	CloseRoom(roomIndex);
 	printf("room %d의 게임이 종료 CloseRoom\n", roomIndex);
@@ -130,15 +136,29 @@ DWORD ServerFrameWork::ThreadOrder(LPVOID arg)
 {
 	int index;
 	DWORD retval;
-	int del;
+	int ins,del;
+	double elapsedTime;
 	while (true) {
+		t_order_start = chrono::system_clock::now();
+		elapsedTime = 0;
+		while (!m_insQueue.empty())
+		{
+			ins = m_insQueue.front();
+			m_insQueue.pop();
+			m_order.push_back(ins);
+		}
 		if (!m_order.empty()) 
 		{
 			for (const auto& p : m_order)
 			{
 				if (room[p].m_roomState == Play)
 				{
-					SetEvent(hGameThread[p]);
+					//printf("SetEvent%d\n", p);
+					if (bOrder[p]) 
+					{
+						SetEvent(hGameThread[p]);
+						bOrder[p] = false;
+					}
 				}
 				else
 				{
@@ -152,6 +172,13 @@ DWORD ServerFrameWork::ThreadOrder(LPVOID arg)
 				m_order.erase(find(m_order.begin(), m_order.end(),del));
 			}
 		}
+		while (elapsedTime < ORDERFREQ)
+		{
+			t_order_end = chrono::system_clock::now();
+			elapsedTime = chrono::duration_cast<chrono::milliseconds>
+				(t_order_end - t_order_start).count()*0.001f;
+			Sleep(4);
+		}
 	}
 	return 0;
 }
@@ -164,15 +191,27 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 	while (true)
 	{
 		//	wait queue
+#ifdef DEBUGMODE
+		printf("[%d]before hGameThread\n",roomIndex);
+#endif
 		WaitForSingleObject(hGameThread[roomIndex], INFINITE);
 		
+#ifdef DEBUGMODE
+		printf("[%d]after hGameThread\n", roomIndex);
+#endif
 		//	wait Communication
+#ifdef DEBUGMODE
+		printf("[%d]before hCommunicated\n", roomIndex);
+#endif
 		retEvent = WaitForMultipleObjects(MAX_PLAYER, hCommunicated[roomIndex], TRUE, INFINITE);	
-
+#ifdef DEBUGMODE
+		printf("[%d]after hCommunicated\n", roomIndex);
+#endif
 #ifdef FIXFREQUENCY
 		//	Fix FrameRate with THREADFREQ
 		FixFrame(roomIndex);
 #endif
+		//printf("GameThread\n");
 		// Calc;
 		retCalc = Calculate(roomIndex);
 		if (retCalc == end_of_game)
@@ -192,9 +231,7 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 		//	For CommunicationPlayer Thread, notice ready to Communicate
 		for (int i = 0; i < MAX_PLAYER; ++i)
 			SetEvent(hSendPacket[roomIndex][i]);
-
-		//	Set Next Thread's
-		SetEvent(hNextThreadCall);
+		bOrder[roomIndex] = true;
 	}
 	GameEnd(roomIndex);
 
@@ -207,9 +244,26 @@ DWORD ServerFrameWork::CommunicationPlayer(LPVOID arg)
 	int playerID = index->playerNum, roomIndex = index->roomNum;
 	int retval;
 	DWORD retEvent;
+	if (playerID < 0 || playerID >= MAX_PLAYER)
+	{
+		printf("playerID Error\n");
+		return 0;
+	}
+	if (roomIndex < 0 || roomIndex >= MAXROOMCOUNT)
+	{
+		printf("roomIndex Error\n");
+		return 0;
+	}
 	while (true) 
 	{
+#ifdef DEBUGMODE
+		printf("[%d].%d before hSendPacket\n", roomIndex,playerID);
+#endif
 		retEvent = WaitForSingleObject(hSendPacket[roomIndex][playerID], INFINITE);
+
+#ifdef DEBUGMODE
+		printf("[%d].%d after hSendPacket\n", roomIndex, playerID);
+#endif
 		if (retEvent != WAIT_OBJECT_0)
 		{
 			printf("room:%d , Player:%d hSendPacket의 retEvent가 WAIT_OBJECT가 아님\n",roomIndex,playerID);
@@ -219,19 +273,29 @@ DWORD ServerFrameWork::CommunicationPlayer(LPVOID arg)
 			printf("room:%d 플레이 종료된 CommnunicationPlayer 스레드 종료\n", roomIndex);
 			break;
 		}
-
+#ifdef DEBUGMODE
+		printf("[%d].%d before ReceivePacketFromClient\n", roomIndex, playerID);
+#endif
 		retval = ReceivePacketFromClient(roomIndex, playerID);
-
+#ifdef DEBUGMODE
+		printf("[%d].%d after ReceivePacketFromClient\n", roomIndex, playerID);
+#endif
 		if (retval == SOCKET_ERROR)
 		{
 			//closesocket(TeamList(roomIndex, playerID).m_socket);
 			//CloseHandle(hCommunicated[roomIndex][playerID]);
 			TeamList(roomIndex, playerID).m_player.m_hp = 0;
 			//if (room[roomIndex].m_roomState == Play)
-			//	printf("room:%d , Player:%d 가 비정상적인 방법으로 종료됨\n", roomIndex, playerID);
+			//printf("room:%d , Player:%d 가 비정상적인 방법으로 종료됨\n", roomIndex, playerID);
 			//return 0;
 		 }
+#ifdef DEBUGMODE
+		printf("[%d].%d before hCommunicated\n", roomIndex, playerID);
+#endif
 		SetEvent(hCommunicated[roomIndex][playerID]);
+#ifdef DEBUGMODE
+		printf("[%d].%d after hCommunicated\n", roomIndex, playerID);
+#endif
 	}
 	return 0;
 }
@@ -323,7 +387,7 @@ inline void ServerFrameWork::FixFrame(int roomIndex)
 	while (true) {
 		room[roomIndex].Tick();
 		if (THREADFREQ > room[roomIndex].m_ElapsedTime)
-			Sleep(1);
+			Sleep(0);
 		else {
 			room[roomIndex].m_ElapsedTime = 0;
 			break;
