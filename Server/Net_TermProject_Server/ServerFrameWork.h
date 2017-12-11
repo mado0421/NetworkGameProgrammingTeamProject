@@ -2,7 +2,8 @@
 
 class ServerFrameWork
 {
-	enum{end_of_game=-1,ok=1, };
+	//
+	enum { end_of_game = -1, ok = 1, };
 	enum { data = 0, end_data = 1 };
 
 	static Room room[MAXROOMCOUNT];
@@ -12,7 +13,8 @@ class ServerFrameWork
 	static HANDLE hGameThread[MAXROOMCOUNT];
 	static HANDLE hNextThreadCall;
 
-	static std::queue<int> m_ThreadQueue;
+	static std::vector<int> m_order;
+	static std::queue<int> m_delQueue;
 
 	//static HANDLE hroom[2];
 public:

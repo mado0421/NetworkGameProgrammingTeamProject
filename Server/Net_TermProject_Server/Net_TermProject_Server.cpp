@@ -90,5 +90,6 @@ int main()
 
 	
 	printf("exit\n");
-
+	closesocket(listen_sock);
+	WSACleanup();
 }

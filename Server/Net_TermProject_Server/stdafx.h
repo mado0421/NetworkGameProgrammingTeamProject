@@ -16,7 +16,9 @@
 #include<stdio.h>
 #include<math.h>
 #include<chrono>
+#include<vector>
 #include<queue>
+#include<algorithm>
 using namespace std;
 //Room 구조체 전역변수 예정
 
@@ -250,18 +252,13 @@ struct S2CPacket
 			memcpy(&iPlayer[i], &iTeam[i].m_player, sizeof(InfoPlayer));
 			memcpy(&iBullet[i], &iTeam[i].m_bullets, sizeof(InfoBullet)*MAX_BULLET);
 		}
-	
 	};
 };
 
 struct C2SPacket 
 {
-
 	InfoPlayer player;
 	InfoBullet Bullets[MAX_BULLET];
 };
-
-
-
 
 // TODO: 프로그램에 필요한 추가 헤더는 여기에서 참조합니다.
