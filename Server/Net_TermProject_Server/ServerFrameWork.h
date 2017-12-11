@@ -1,12 +1,10 @@
 #pragma once
 
-struct argument {
-	int number = 0;
-	int member = 0;
-};
-
 class ServerFrameWork
 {
+	enum{end_of_game=-1,ok=1, };
+	enum { data = 0, end_data = 1 };
+
 	static Room room[MAXROOMCOUNT];
 	static HANDLE hCommunicated[MAXROOMCOUNT][MAX_PLAYER];
 	static HANDLE hSendPacket[MAXROOMCOUNT][MAX_PLAYER];
@@ -35,11 +33,11 @@ public:	// Àç¿í
 	bool isGameReady(int i) {
 		return room[i].m_roomState;
 	}
+
 	public:
 		void SetSocket(int roomIndex, int PlayerId, SOCKET socket);
 		void InitRoom(int roomIndex);
 		void GameStart(int roomIndex);
-		void CloseRoom(int roomIndex);
 	
 public:
 	//	Using in Thread Function
@@ -49,8 +47,11 @@ public:
 
 	static int ReceivePacketFromClient(int roomNum,int PlayerID);
 	static void SendPacketToClient(S2CPacket* packet,int roomNum);
-	static void Calculate(int roomNum);
+	static int Calculate(int roomNum);
 	static inline void FixFrame(int roomNum);
+
+	static void GameEnd(int roomIndex);
+	static void CloseRoom(int roomIndex);
 
 };
 

@@ -36,7 +36,7 @@ using namespace std;
 #define MAX_AMMO 6
 
 #define MAXROOMCOUNT	100
-#define THREADFREQ	0.0016f
+#define THREADFREQ	0.016f
 
 #define FIXFREQUENCY
 
@@ -121,7 +121,7 @@ bool inline IsZero(float a) {
 }
 
 enum {
-	Lobby = false, Play = true
+	Lobby = false, Play = true, closing=4
 };
 
 struct Room
@@ -146,7 +146,7 @@ struct Room
 
 
 	// 준혁 - 시간체크용 tmp;
-	float m_ElapsedTime = 0;
+	double m_ElapsedTime = 0;
 	chrono::system_clock::time_point m_clock;
 	chrono::system_clock::time_point m_past;
 	void Tick() { 
@@ -154,7 +154,7 @@ struct Room
 		m_ElapsedTime += chrono::duration_cast<chrono::milliseconds>(m_clock - m_past).count()*0.001f;
 		m_past = m_clock;
 		//printf("Tick = %f\n", m_ElapsedTime);
-		Sleep(10);
+		//Sleep(1);
 	};
 	void timeInit() {
 		m_past = chrono::system_clock::now();
@@ -235,8 +235,7 @@ struct Room_Player
 
 struct S2CPacket
 {	// Server to Client Packet 구조체 실제 데이터를 서버에서 보낼
-//	DWORD	Message;	//	HIWORD 메시지 타입
-						//	0번 Data, 1번 게임시작, 2번 게임종료…
+	//DWORD	Message;	//	0번 Data, 1번 게임종료
 	InfoPlayer iPlayer[MAX_PLAYER];
 	InfoBullet iBullet[MAX_PLAYER][MAX_BULLET];
 //	chrono::system_clock::time_point SendTime;

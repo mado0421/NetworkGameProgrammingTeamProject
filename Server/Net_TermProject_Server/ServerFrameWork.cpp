@@ -13,7 +13,7 @@ std::queue<int> ServerFrameWork::m_ThreadQueue;
 
 #define TEST_THREAD_COUNT 1
 #define TEST_CNT_COUNT	10000
-int cnt = 0;
+//int cnt = 0;
 
 ServerFrameWork::ServerFrameWork()
 {
@@ -30,9 +30,6 @@ ServerFrameWork::~ServerFrameWork()
 {
 }
 
-
-
-
 void ServerFrameWork::SetSocket(int RoomNumber, int PlayerId,SOCKET socket)
 {
 	room[RoomNumber].m_teamList[PlayerId].m_socket = socket;
@@ -42,7 +39,6 @@ void ServerFrameWork::SetSocket(int RoomNumber, int PlayerId,SOCKET socket)
 void ServerFrameWork::InitRoom(int roomIndex)
 {
 	//	Make Event
-	room[roomIndex].m_roomState = Play;
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		hCommunicated[roomIndex][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
 		hSendPacket[roomIndex][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -51,6 +47,7 @@ void ServerFrameWork::InitRoom(int roomIndex)
 	hGameThread[roomIndex] = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 	Room_Player p[MAX_PLAYER];
+
 	HANDLE hTmp;
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		p[i].roomNum = roomIndex;
@@ -61,6 +58,7 @@ void ServerFrameWork::InitRoom(int roomIndex)
 	hTmp = CreateThread(NULL, 0, GameThread, (LPVOID)roomIndex, 0, NULL);
 	CloseHandle(hTmp);
 	
+	room[roomIndex].m_roomState = Play;
 }
 
 void ServerFrameWork::GameStart(int roomIndex)
@@ -73,6 +71,32 @@ void ServerFrameWork::GameStart(int roomIndex)
 	m_ThreadQueue.push(roomIndex);
 	SetEvent(hNextThreadCall);
 	room[roomIndex].timeInit();
+	printf("room: %d GameStart\n", roomIndex);
+}
+
+void ServerFrameWork::GameEnd(int roomIndex)
+{
+	// Set packet
+	SOCKET client_sock[MAX_PLAYER];
+	S2CPacket packet;
+
+	::ZeroMemory(&packet, sizeof(S2CPacket));
+	packet.SetPacket(roomIndex, room[roomIndex]);
+
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		client_sock[i] = TeamList(roomIndex, i).m_socket;
+	}
+
+	for (int i = 0; i < MAX_PLAYER; ++i){
+		//packet.Message = end_data;
+		send(client_sock[i], (char*)&packet, sizeof(S2CPacket), 0);
+	}
+	for (int i = 0; i < MAX_PLAYER; ++i)
+		SetEvent(hSendPacket[roomIndex][i]);
+	room[roomIndex].m_roomState = closing;
+
+	CloseRoom(roomIndex);
+	printf("room %d의 게임이 종료 CloseRoom\n", roomIndex);
 }
 
 void ServerFrameWork::CloseRoom(int roomIndex)
@@ -80,8 +104,10 @@ void ServerFrameWork::CloseRoom(int roomIndex)
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		CloseHandle(hCommunicated[roomIndex][i]);
 		CloseHandle(hSendPacket[roomIndex][i]);
+		closesocket(TeamList(roomIndex, i).m_socket);
 	}
 	CloseHandle(hGameThread[roomIndex]);
+	room[roomIndex].m_roomState = Lobby;
 }
 
 DWORD ServerFrameWork::ThreadOrder(LPVOID arg)
@@ -115,26 +141,45 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 {
 	int roomIndex = (int)arg;
 	DWORD retEvent;
+	int retCalc;
 	while (true)
 	{
 		//	wait queue
 		WaitForSingleObject(hGameThread[roomIndex], INFINITE);
-		//for test
-		//if (cnt++ >= TEST_CNT_COUNT)break;
-		//::printf("\n cnt = %d\n", cnt);
-
+		
 		//	wait Communication
-		retEvent = WaitForMultipleObjects(MAX_PLAYER, hCommunicated[roomIndex], TRUE, INFINITE);
-		if (retEvent != WAIT_OBJECT_0)break;
+		retEvent = WaitForMultipleObjects(MAX_PLAYER, hCommunicated[roomIndex], TRUE, 100);
+
+		switch (retEvent)
+		{
+		case WAIT_ABANDONED_0 + 0:
+			printf("room: %d의 %d 번째 플레이어는 접속이 끊김\n", roomIndex, 0);
+			break;
+		case WAIT_ABANDONED_0 + 1:
+			printf("room: %d의 %d 번째 플레이어는 접속이 끊김\n", roomIndex, 1);
+			break;
+		case WAIT_ABANDONED_0 + 2:
+			printf("room: %d의 %d 번째 플레이어는 접속이 끊김\n", roomIndex, 2);
+			break;
+		case WAIT_ABANDONED_0 + 3:
+			printf("room: %d의 %d 번째 플레이어는 접속이 끊김\n", roomIndex, 3);
+			break;
+		default:
+			break;
+		}
+		
 
 #ifdef FIXFREQUENCY
 		//	Fix FrameRate with THREADFREQ
 		FixFrame(roomIndex);
 #endif
 		// Calc;
-		//::printf("[%d] Calculate\n", roomIndex);
-		Calculate(roomIndex);
-		//::printf("[%d] Calc Success\n", roomIndex);
+		retCalc = Calculate(roomIndex);
+		if (retCalc == end_of_game)
+		{
+			printf("room:%d retCalc=end_of_game\n",roomIndex);
+			break;
+		}
 
 		// Set packet
 		S2CPacket packet;
@@ -143,7 +188,6 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 
 		//	Send
 		SendPacketToClient(&packet, roomIndex);
-		//::printf("SendPacketToClient %d \n", roomIndex);
 
 		//	For CommunicationPlayer Thread, notice ready to Communicate
 		for (int i = 0; i < MAX_PLAYER; ++i)
@@ -152,49 +196,56 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 		//	Set Next Thread's
 		SetEvent(hNextThreadCall);
 	}
+	GameEnd(roomIndex);
+
 	return 0;
 }
 
 DWORD ServerFrameWork::CommunicationPlayer(LPVOID arg)
 {
 	Room_Player* index = (Room_Player*)arg;
-	int index_p = index->playerNum, index_r = index->roomNum;
+	int playerID = index->playerNum, roomIndex = index->roomNum;
 	int retval;
 	DWORD retEvent;
-	while (true) {
-	
-		retEvent = WaitForSingleObject(hSendPacket[index_r][index_p], INFINITE);
-		if (retEvent != WAIT_OBJECT_0)break;
+	while (true) 
+	{
+		retEvent = WaitForSingleObject(hSendPacket[roomIndex][playerID], INFINITE);
+		if (retEvent != WAIT_OBJECT_0)
+		{
+			printf("room:%d , Player:%d hSendPacket의 retEvet가 WAIT_OBJECT가 아님\n");
+			break;
+		}
+		if (room[roomIndex].m_roomState != Play) {
+			printf("room:%d 플레이 종료된 CommnunicationPlayer 스레드 종료\n", roomIndex);
+			break;
+		}
 
-		retval = ReceivePacketFromClient(index_r, index_p);
+		retval = ReceivePacketFromClient(roomIndex, playerID);
 
-		if (retval != SOCKET_ERROR);
-			//::printf("CommunicationPlayer %d %d retval=%d\n", index_r, index_p, retval);
-		else;
-			//::printf("CommunicationPlayer %d %d SOCKET_ERROR\n", index_r, index_p);
-
-		SetEvent(hCommunicated[index_r][index_p]);
-		
-		//if (cnt >= TEST_CNT_COUNT)break;
+		if (retval == SOCKET_ERROR)
+		{
+			closesocket(TeamList(roomIndex, playerID).m_socket);
+			CloseHandle(hCommunicated[roomIndex][playerID]);
+			TeamList(roomIndex, playerID).m_player.m_hp = 0;
+			if (room[roomIndex].m_roomState != closing)
+				printf("room:%d , Player:%d 가 비정상적인 방법으로 종료됨\n", roomIndex, playerID);
+			return 0;
+		 }
+		SetEvent(hCommunicated[roomIndex][playerID]);
 	}
 	return 0;
 }
 
 int ServerFrameWork::ReceivePacketFromClient(int roomNum, int PlayerID)
 {
-	//InfoTeam *team = &room[roomNum].m_teamList[PlayerID];
-	
 	C2SPacket packet;
 	ZeroMemory(&packet, sizeof(C2SPacket));
 	int retval;
-	retval = recvn(TeamList(roomNum, PlayerID).m_socket, (char*)&packet, sizeof(C2SPacket), 0);
-	if (PlayerID == 0)
-	{
-		printf("player1.bullet.x: %f\n", packet.Bullets[0].m_pos.x);
-	}
+
+	retval = recvn(TeamList(roomNum, PlayerID).m_socket,(char*)&packet, sizeof(C2SPacket), 0);
 	if (retval == SOCKET_ERROR)
 		return SOCKET_ERROR;
-	//printf("ReceivePacketFromClient room:%d, PlayerId:%d, retval = %d\n", roomNum, PlayerID, retval);
+
 	memcpy(&TeamList(roomNum, PlayerID).m_player, &packet.player, sizeof(InfoPlayer));
 	memcpy(&TeamList(roomNum, PlayerID).m_bullets, &packet.Bullets, sizeof(InfoBullet)*MAX_BULLET);
 
@@ -209,26 +260,36 @@ void ServerFrameWork::SendPacketToClient(S2CPacket * packet, int roomNum)
 		client_sock[i] = TeamList(roomNum,i).m_socket;
 	}
 
-	//	ConnectCheck? , Need Thread?
 	for (int i = 0; i < MAX_PLAYER; ++i)
 	{
-//		packet->SendTime = chrono::system_clock::now();
-//		packet->Message = 0;
+		//packet->SendTime = chrono::system_clock::now();
+		//packet->Message = data;
 		send(client_sock[i], (char*)packet, sizeof(S2CPacket), 0);
 	}
 }
 
-void ServerFrameWork::Calculate(int roomNum)
+int ServerFrameWork::Calculate(int roomNum)
 {
 	InfoPlayer* player;
 	InfoBullet* bullet;
+	int dead = 0;
 
 	for (int i = 0; i < MAX_PLAYER; ++i)
 	{
 		player = &TeamList(roomNum, i).m_player;
-		//	Bullet Check;
-		if (IsPlayerDead(player->m_hp))continue;
 
+		//	PlayerCheck
+		if (IsPlayerDead(player->m_hp))
+		{
+			//	플레이어가 한명 남은경우 게임을 종료
+			if (++dead == MAX_PLAYER - 1)
+				return end_of_game;
+
+			// 죽은 플레이어는 계산하지 않고 다음 플레이어를 본다.
+			continue;
+		}
+
+		//	Bullet Check;
 		for (int j = 0; j < MAX_PLAYER; ++j)
 		{
 			//	동일 플레이어 건너띔
@@ -243,14 +304,18 @@ void ServerFrameWork::Calculate(int roomNum)
 				if (player->m_pos.x + PLAYERSIZE < bullet->m_pos.x - BULLETSIZE)continue;
 				if (player->m_pos.y - PLAYERSIZE > bullet->m_pos.y + BULLETSIZE)continue;
 				if (player->m_pos.y + PLAYERSIZE < bullet->m_pos.y - BULLETSIZE)continue;
-				printf("player:%f, %f\t bullet:%f, %f\n", player->m_pos.x, player->m_pos.y, bullet->m_pos.x, bullet->m_pos.y);
 
 				//	Collide Test ok
 				player->m_hp -= BULLETDAMAGE;
+				if (IsPlayerDead(player->m_hp))dead++;
 				DestroyBullet(bullet);
 			}
 		}
 	}
+
+	if (dead == MAX_PLAYER - 1)
+		return end_of_game;
+	return ok;
 }
 
 inline void ServerFrameWork::FixFrame(int roomIndex)
@@ -287,19 +352,21 @@ int ServerFrameWork::findVocantRoom(SOCKET& socket)
 	for (int i = 0; i < MAXROOMCOUNT; ++i)
 	{
 		/*room[i]에 모든 플레이어가 있는게 아니면*/
-		if (!room[i].checkAllPlayerInRoom())
-		{
-			/*그 룸에 지금 들어온 애를 넣고*/
-			if (!room[i].playerArrive(socket)) return -2;
-
-			/*만약 지금 애 들어가서 그 룸이 4명이 되었으면*/
-			if (room[i].checkAllPlayerInRoom())
+		if (room[i].m_roomState ==Lobby) {
+			if (!room[i].checkAllPlayerInRoom())
 			{
-				/*게임 스타트 시킴*/
-				room[i].gameStart();
-				room[i].m_roomState = Play;
+				/*그 룸에 지금 들어온 애를 넣고*/
+				if (!room[i].playerArrive(socket)) return -2;
+
+				/*만약 지금 애 들어가서 그 룸이 4명이 되었으면*/
+				if (room[i].checkAllPlayerInRoom())
+				{
+					/*게임 스타트 시킴*/
+					room[i].gameStart();
+					room[i].m_roomState = Play;
+				}
+				return i;
 			}
-			return i;
 		}
 	}
 	return -1;
