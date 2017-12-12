@@ -1,4 +1,5 @@
 #pragma once
+#include "Texture.h"
 
 #define DEFAULTHP 1
 #define BULLETSPD 320.0f
@@ -6,6 +7,10 @@
 #define PLAYERSPD 125.0f
 #define PLAYERSIZE 7.5f
 #define MAX_AMMO 6
+
+#define BULLETIMGSIZE 5.0f
+#define WALLSIDESIZE 16.0f
+#define WALLTOPSIZE 8.0f
 
 enum tile
 {
@@ -28,10 +33,12 @@ protected:
 	float		m_interval;
 	bool		m_dead;
 
+	Texture		*m_pTexture;
 public:
 	Object();
-	Object(int hp, Vector2D pos, float spd, float size)
-		: m_hp(hp)
+	Object(Texture *pTexture, int hp, Vector2D pos, float spd, float size)
+		: m_pTexture(pTexture)
+		, m_hp(hp)
 		, m_pos(pos)
 		, m_spd(spd)
 		, m_size(size)
@@ -83,8 +90,8 @@ private:
 	int m_dirY;
 public:
 	Player();
-	Player(int hp, Vector2D pos, float spd, float size, int team)
-		: Object(hp, pos, spd, size)
+	Player(Texture *pTexture, int hp, Vector2D pos, float spd, float size, int team)
+		: Object(pTexture, hp, pos, spd, size)
 		, m_team(team)
 	{
 		if (team == PLAYER_0) setColor(Color(1.0f, 0.0f, 0.0f, 1.0f));
@@ -97,6 +104,8 @@ public:
 		m_dirY = 0;
 	}
 	~Player();
+
+	virtual void render() const;
 
 	void changeMoveDirection(unsigned char dir, float val);
 	int getMoveDirection(unsigned char dir);
@@ -121,16 +130,16 @@ private:
 	int			m_team;
 public:
 	Bullet();
-	Bullet(Vector2D pos, Vector2D dir, int team)
-		: Object(DEFAULTHP, pos, BULLETSPD, BULLETSIZE)
+	Bullet(Texture *pTexture, Vector2D pos, Vector2D dir, int team)
+		: Object(pTexture, DEFAULTHP, pos, BULLETSPD, BULLETSIZE)
 		, m_team(team)
 	{
 		m_dir = dir;
 		if (team == PLAYER_0) setColor(Color(1.0f, 1.0f, 0.0f, 1.0f));
 		else setColor(Color(1.0f, 0.0f, 0.0f, 1.0f));
 	}
-	Bullet(int hp, Vector2D pos, float spd, float size, Vector2D dir, int team)
-		: Object(hp, pos, spd, size)
+	Bullet(Texture *pTexture, int hp, Vector2D pos, float spd, float size, Vector2D dir, int team)
+		: Object(pTexture, hp, pos, spd, size)
 		, m_team(team)
 	{
 		m_dir = dir;
@@ -139,8 +148,11 @@ public:
 	}
 	~Bullet();
 
+	virtual void render() const;
+
 	virtual void move(float val);
 
+	void setTexture(Texture* pTexture) { m_pTexture = pTexture; }
 	void setDirection(Vector2D dir) { m_dir = dir; }
 
 	int getTeam() const { return m_team; }
@@ -153,12 +165,15 @@ class Item : public Object
 private:
 public:
 	Item();
-	Item(int hp, Vector2D pos, float spd, float size)
-		: Object(hp, pos, spd, size)
+	Item(Texture *pTexture, int hp, Vector2D pos, float spd, float size)
+		: Object(pTexture, hp, pos, spd, size)
 	{
 		setColor(Color(1.0f, 1.0f, 1.0f, 1.0f));
 	}
 	~Item();
+
+	virtual void render() const;
+
 };
 
 class Tile : public Object
@@ -168,8 +183,8 @@ private:
 	int texIdx;
 public:
 	Tile();
-	Tile(Vector2D pos, int type, int texIdx)
-		: Object(0.0f, pos, 0.0f, TILESIZE)
+	Tile(Texture *pTexture, Vector2D pos, int type, int texIdx)
+		: Object(pTexture, 0.0f, pos, 0.0f, TILESIZE)
 		, type(type)
 		, texIdx(texIdx)
 	{
@@ -182,3 +197,4 @@ public:
 	int getType()const { return type; }
 
 };
+

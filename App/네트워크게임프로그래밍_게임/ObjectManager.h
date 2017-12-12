@@ -4,6 +4,9 @@ extern HANDLE hCommunicateEvent;
 extern HANDLE hUpdateEvent;
 extern C2SPacket c2spacket;
 extern S2CPacket s2cpacket;
+
+class Texture;
+
 class ObjectManager
 {
 private:
@@ -14,11 +17,15 @@ private:
 	std::vector<Item>	m_itemList;
 	std::vector<Tile>	m_tileList;
 	int m_myTeamNo;
+
+	Texture *m_pTexture=NULL;
+
 public:
 	ObjectManager();
 	~ObjectManager();
 
 	void initialize(int team);
+	void setTexture(Texture* pTexture);
 
 	void addBullet(float x, float y, int team);
 	void reloadAmmo(int team);

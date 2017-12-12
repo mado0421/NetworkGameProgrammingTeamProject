@@ -15,9 +15,9 @@ Texture::~Texture()
 void Texture::init()
 {
 	char name[64];
-
-	glGenTextures(MAX_TEXTURE, m_textures);
-	for (int i = 0; i < MAX_TEXTURE; i++)
+	
+	glGenTextures(tex::MAX_TEXTURE, m_textures);
+	for (int i = 0; i < tex::MAX_TEXTURE; i++)
 	{
 		glBindTexture(GL_TEXTURE_2D, m_textures[i]);
 

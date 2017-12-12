@@ -128,6 +128,28 @@ public:
 	ObjectManager* getObjectManager() { return m_objMng; }
 };
 
+class ResultScene : public Scene
+{
+protected:
+	Framework *m_pFramework;
+public:
+	ResultScene();
+	ResultScene(Framework *pFramework);
+	~ResultScene();
+public:
+	virtual void initialize(void* data = nullptr);
+	virtual void leave();
+
+	virtual void update(float elapsedTime);
+	virtual void render();
+
+	virtual void mouseInput(int button, int state, int x, int y);
+	virtual void keyDown(unsigned char key, int x, int y);
+	virtual void keyUp(unsigned char key, int x, int y);
+	virtual void specialKeyDown(int key, int x, int y);
+	virtual void specialKeyUp(int key, int x, int y);
+};
+
 
 DWORD WINAPI communicateThreadFunc(LPVOID arg);
 DWORD WINAPI waitThreadFunc(LPVOID arg);

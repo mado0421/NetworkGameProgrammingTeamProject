@@ -1,21 +1,14 @@
 #include "stdafx.h"
 #include "ObjectManager.h"
+#include "Texture.h"
+
 C2SPacket c2spacket;
 S2CPacket s2cpacket;
 HANDLE			hCommunicateEvent;
 HANDLE			hUpdateEvent;
 ObjectManager::ObjectManager()
 {
-	for (int i = 0; i < MAX_BULLET; ++i)
-	{
-		m_myBulletList[i].setPos(Vector2D(INVALID,0));
-		m_myBulletList[i].setDirection(Vector2D(0, 0));
-	}
-	for (int i = 0; i < MAX_BULLET * 3; ++i)
-	{
-		m_OtherBulletList[i].setSize(2.5f);
-		m_OtherBulletList[i].setHp(1);
-	}
+
 }
 
 ObjectManager::~ObjectManager()
@@ -44,7 +37,7 @@ void ObjectManager::initialize(int team)
 		while (!mapFile.eof())
 		{
 			mapFile >> type >> texIdx >> x >> y;
-			m_tileList.emplace_back(Vector2D(
+			m_tileList.emplace_back(m_pTexture, Vector2D(
 				x * TILESIZE * 2.0 + TILESIZE,
 				y* TILESIZE * 2.0 + TILESIZE),
 				type, texIdx);
@@ -58,9 +51,27 @@ void ObjectManager::initialize(int team)
 	{
 		if (tp->getType() == tile::PSpawn)
 		{
-			m_playerList.emplace_back(3, tp->getPos(), PLAYERSPD, PLAYERSIZE, i++);
+			m_playerList.emplace_back(m_pTexture ,3, tp->getPos(), PLAYERSPD, PLAYERSIZE, i++);
 		}
 	}
+
+	for (int i = 0; i < MAX_BULLET; ++i)
+	{
+		m_myBulletList[i].setPos(Vector2D(INVALID, 0));
+		m_myBulletList[i].setDirection(Vector2D(0, 0));
+		m_myBulletList[i].setTexture(m_pTexture);
+	}
+	for (int i = 0; i < MAX_BULLET * 3; ++i)
+	{
+		m_OtherBulletList[i].setSize(2.5f);
+		m_OtherBulletList[i].setHp(1);
+		m_OtherBulletList[i].setTexture(m_pTexture);
+	}
+}
+
+void ObjectManager::setTexture(Texture * pTexture)
+{
+	m_pTexture = pTexture;
 }
 
 void ObjectManager::addBullet(float x, float y, int team)
@@ -78,7 +89,7 @@ void ObjectManager::addBullet(float x, float y, int team)
 				{
 					if (m_myBulletList[i].getPos().x == INVALID)
 					{
-						m_myBulletList[i] = Bullet(p->getPos(),
+						m_myBulletList[i] = Bullet(m_pTexture,p->getPos(),
 							Vector::normalize(Vector2D(Vector::sub(p->getPos(), Vector2D(x, y)))), PLAYER_0);
 						//b[m_myTeamNo*MAX_BULLET + i].m_pos = m_myBulletList[i].getPos();
 						break;
@@ -231,7 +242,7 @@ void ObjectManager::updatePlayerInfo()
 		m_playerList[i].setPos(s2cpacket.iPlayer[i].m_pos);
 		for (int j = 0; j < MAX_BULLET; ++j)
 		{
-			m_OtherBulletList[k*MAX_BULLET + j].setTeam(5);
+			m_OtherBulletList[k*MAX_BULLET + j].setTeam(5);	//???????
 			m_OtherBulletList[k*MAX_BULLET + j].setPos(s2cpacket.iBullet[i][j].m_pos);
 		}
 		//printf("%f,%f\n", m_playerList[i].getPos().x, m_playerList[i].getPos().y);

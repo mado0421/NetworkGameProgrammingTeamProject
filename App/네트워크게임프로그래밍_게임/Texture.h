@@ -1,8 +1,6 @@
 #pragma once
 
 enum tex {
-	
-	
 	title_bg=0,
 	title_button,
 	etc,

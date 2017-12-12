@@ -68,6 +68,25 @@ Player::~Player()
 {
 }
 
+void Player::render() const
+{
+	glPushMatrix();
+
+	m_pTexture->render(
+		m_pos.y - PLAYERSIZE,
+		m_pos.y + PLAYERSIZE,
+		m_pos.x - PLAYERSIZE,
+		m_pos.x + PLAYERSIZE,
+		tex::etc, 16, 16, 8, 1+m_team);
+
+	//glColor3f(m_color.r, m_color.g, m_color.b);
+	//glTranslatef(m_pos.x, m_pos.y, 0.0f);
+
+	//glutSolidCube(m_size * 2.0);
+
+	glPopMatrix();
+}
+
 void Player::changeMoveDirection(unsigned char dir, float val)
 {
 	switch (dir)
@@ -140,6 +159,26 @@ Bullet::~Bullet()
 {
 }
 
+void Bullet::render() const
+{
+	glPushMatrix();
+	m_pTexture->render(
+		m_pos.y - BULLETSIZE*4,
+		m_pos.y + BULLETSIZE*4,
+		m_pos.x - BULLETSIZE*4,
+		m_pos.x + BULLETSIZE*4,
+		tex::etc, 16, 16, 9+m_team*0.2, 0);
+	//m_pTexture->render(
+	//	m_pos.y - BULLETIMGSIZE,
+	//	m_pos.y + BULLETIMGSIZE,
+	//	m_pos.x - BULLETIMGSIZE,
+	//	m_pos.x + BULLETIMGSIZE,
+	//	tex::etc,
+	//	16, 16, 9, 0);
+
+	glPopMatrix();
+}
+
 void Bullet::move(float val)
 {
 	m_pos.x += val * m_spd * m_dir.x;
@@ -156,6 +195,10 @@ Item::~Item()
 {
 }
 
+void Item::render() const
+{
+}
+
 Tile::Tile()
 {
 }
@@ -169,10 +212,25 @@ void Tile::render() const
 	if (type == tile::Wall)
 	{
 		glPushMatrix();
-		glColor3f(m_color.r, m_color.g, m_color.b);
-		glTranslatef(m_pos.x, m_pos.y, 0.0f);
+		m_pTexture->render(
+			m_pos.y - WALLSIDESIZE,
+			m_pos.y + WALLSIDESIZE,
+			m_pos.x - WALLSIDESIZE,
+			m_pos.x + WALLSIDESIZE,
+			tex::etc,
+			16, 16, 8, 5);
+		m_pTexture->render(
+			m_pos.y + WALLSIDESIZE - WALLTOPSIZE,
+			m_pos.y + WALLSIDESIZE + WALLTOPSIZE,
+			m_pos.x - WALLSIDESIZE,
+			m_pos.x + WALLSIDESIZE,
+			tex::etc,
+			16, 16, 9, 5);
 
-		glutSolidCube(m_size * 2.0);
+		//glColor3f(m_color.r, m_color.g, m_color.b);
+		//glTranslatef(m_pos.x, m_pos.y, 0.0f);
+
+		//glutSolidCube(m_size * 2.0);
 
 		glPopMatrix();
 	}
