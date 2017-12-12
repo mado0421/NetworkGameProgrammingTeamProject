@@ -611,7 +611,7 @@ PlayScene::PlayScene(Framework * pFramework)
 
 PlayScene::~PlayScene()
 {
-	delete m_objMng;
+	//delete m_objMng;
 }
 
 void PlayScene::initialize(void* data)
@@ -641,15 +641,20 @@ void PlayScene::leave()
 
 void PlayScene::update(float elapsedTime)
 {
+	printf("update wait 전\n");
+	WaitForSingleObject(hUpdateEvent, INFINITE);
+	printf("update wait 후\n");
 	m_objMng->update(elapsedTime);
 	SetEvent(hCommunicateEvent);
 	ResetEvent(hUpdateEvent);
+	printf("Communicate:on, update:off\n");
 }
 
 void PlayScene::render()
 {
-
+	glDisable(GL_BLEND);
 	m_objMng->render();
+	glEnable(GL_BLEND);
 	WaitForSingleObject(hUpdateEvent, 1000);
 }
 
@@ -661,6 +666,9 @@ void PlayScene::mouseInput(int button, int state, int x, int y)
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
 		m_objMng->addBullet(x, y, m_myTeam_No);
+		SetEvent(hCommunicateEvent);
+		ResetEvent(hUpdateEvent);
+		printf("Communicate:on, update:off\n");
 	}
 	else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
 	{
@@ -670,9 +678,6 @@ void PlayScene::mouseInput(int button, int state, int x, int y)
 	{
 		/*for Test*/
 	}
-	SetEvent(hCommunicateEvent);
-	ResetEvent(hUpdateEvent);
-	
 }
 
 void PlayScene::keyDown(unsigned char key, int x, int y)
@@ -763,46 +768,48 @@ DWORD WINAPI communicateThreadFunc(LPVOID arg)
 	retval = recvn(sock, (char*)&s2cpacket, sizeof(S2CPacket), 0);
 	ResetEvent(hCommunicateEvent);
 	SetEvent(hUpdateEvent);
+	printf("Communicate:off, update:on\n");
 	while (1)
 	{
-		
-		sec = std::chrono::system_clock::now() - start;
-		//if (sec.count()>1 / 60)
+		printf("communicate wait 전\n");
+		WaitForSingleObject(hCommunicateEvent, INFINITE);
+		printf("communicate wait 후\n");
+		send(sock, (char*)&c2spacket, sizeof(C2SPacket), 0);
+		printf("send보냄\n");
+		retval = recvn(sock, (char*)&s2cpacket, sizeof(S2CPacket), 0);
+		printf("recvn 지나감\n");
+		if (retval == SOCKET_ERROR)
 		{
-			printf("communicate wait 전\n");
-			WaitForSingleObject(hCommunicateEvent, INFINITE);
-			printf("communicate wait 후\n");
-			send(sock, (char*)&c2spacket, sizeof(C2SPacket), 0);
-			retval = recvn(sock, (char*)&s2cpacket, sizeof(S2CPacket), 0);
-			if (retval == SOCKET_ERROR)
-			{
-				ResetEvent(hCommunicateEvent);
-				SetEvent(hUpdateEvent);
-				playScene->changeScene(SceneType::Title);
-				ExitThread(0);
-			}
-			switch (s2cpacket.Message)
-			{
-			case DATA:
-				start = std::chrono::system_clock::now();
-				ResetEvent(hCommunicateEvent);
-				SetEvent(hUpdateEvent);
-				
-				break;
-			case STARTGAME:
-				break;
-			case ENDGAME:
-				ResetEvent(hCommunicateEvent);
-				SetEvent(hUpdateEvent);
-				playScene->changeScene(SceneType::Title);
-				ExitThread(0);
-				break;
-			}
+			ResetEvent(hCommunicateEvent);
+			SetEvent(hUpdateEvent);
+			printf("Communicate:off, update:on\n");
+			playScene->changeScene(SceneType::Title);
+			ExitThread(0);
 		}
+		switch (s2cpacket.Message)
+		{
+		case DATA:
+			start = std::chrono::system_clock::now();
+			ResetEvent(hCommunicateEvent);
+			SetEvent(hUpdateEvent);
+			printf("Communicate:off, update:on\n");
+			break;
+		case STARTGAME:
+			break;
+		case ENDGAME:
+			ResetEvent(hCommunicateEvent);
+			SetEvent(hUpdateEvent);
+			printf("Communicate:off, update:on\n");
+			playScene->changeScene(SceneType::Title);
+			ExitThread(0);
+			break;
+		}
+
 	}
 
 	return 0;
 }
+
 
 DWORD waitThreadFunc(LPVOID arg)
 {

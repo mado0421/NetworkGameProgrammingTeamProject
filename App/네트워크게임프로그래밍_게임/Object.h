@@ -85,12 +85,12 @@ class Player : public Object
 private:
 	int m_team;
 	int m_ammo;
-
+	int m_state;
 	int m_dirX;
 	int m_dirY;
 public:
 	Player();
-	Player(Texture *pTexture, int hp, Vector2D pos, float spd, float size, int team)
+	Player(Texture *pTexture, int hp, Vector2D pos, float spd, float size, int team, int state=1)
 		: Object(pTexture, hp, pos, spd, size)
 		, m_team(team)
 	{
@@ -121,6 +121,8 @@ public:
 	int getTeam() const { return m_team; }
 	int getAmmo() const { return m_ammo; }
 	void setHp(int h) { m_hp = h; }
+	int getState() const { return m_state; }
+	void setState(int s) { m_state = s; }
 	bool isCanFire() const { return m_ammo; }
 };
 
@@ -128,19 +130,20 @@ class Bullet : public Object
 {
 private:
 	int			m_team;
+	int			m_damage;
 public:
 	Bullet();
-	Bullet(Texture *pTexture, Vector2D pos, Vector2D dir, int team)
+	Bullet(Texture *pTexture, Vector2D pos, Vector2D dir, int team, int damage)
 		: Object(pTexture, DEFAULTHP, pos, BULLETSPD, BULLETSIZE)
-		, m_team(team)
+		, m_team(team), m_damage(damage)
 	{
 		m_dir = dir;
 		if (team == PLAYER_0) setColor(Color(1.0f, 1.0f, 0.0f, 1.0f));
 		else setColor(Color(1.0f, 0.0f, 0.0f, 1.0f));
 	}
-	Bullet(Texture *pTexture, int hp, Vector2D pos, float spd, float size, Vector2D dir, int team)
+	Bullet(Texture *pTexture, int hp, Vector2D pos, float spd, float size, Vector2D dir, int team, int damage)
 		: Object(pTexture, hp, pos, spd, size)
-		, m_team(team)
+		, m_team(team), m_damage(damage)
 	{
 		m_dir = dir;
 		if (team == PLAYER_0) setColor(Color(1.0f, 1.0f, 0.0f, 1.0f));
@@ -158,6 +161,8 @@ public:
 	int getTeam() const { return m_team; }
 	void setTeam(int val) { m_team = val; }
 	Vector2D getDirection() const { return m_dir; }
+	int getDamage() const { return m_damage; }
+	void setDamage(int val) { m_damage = val; }
 };
 
 class Item : public Object

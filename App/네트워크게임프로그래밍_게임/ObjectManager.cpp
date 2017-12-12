@@ -87,10 +87,10 @@ void ObjectManager::addBullet(float x, float y, int team)
 				Vector::normalize(Vector2D(Vector::sub(p->getPos(), Vector2D(x, y)))), PLAYER_0);*/
 				for (int i = 0; i < MAX_BULLET; ++i)
 				{
-					if (m_myBulletList[i].getPos().x == INVALID)
+					if (m_myBulletList[i].getDamage() == 0)
 					{
-						m_myBulletList[i] = Bullet(m_pTexture,p->getPos(),
-							Vector::normalize(Vector2D(Vector::sub(p->getPos(), Vector2D(x, y)))), PLAYER_0);
+						m_myBulletList[i] = Bullet(m_pTexture, p->getPos(),
+							Vector::normalize(Vector2D(Vector::sub(p->getPos(), Vector2D(x, y)))), PLAYER_0, p->getState());
 						//b[m_myTeamNo*MAX_BULLET + i].m_pos = m_myBulletList[i].getPos();
 						break;
 					}
@@ -181,14 +181,12 @@ void ObjectManager::update(float elapsedTime)
 
 		if (m_myBulletList[i].isDead())
 		{
-			m_myBulletList[i].setPos(Vector2D(INVALID, 0));
-			m_myBulletList[i].setDirection(Vector2D(0, 0));
+			m_myBulletList[i].setDamage(0);
 			continue;
 		}
 		if (m_myBulletList[i].isOut())
 		{
-			m_myBulletList[i].setPos(Vector2D(INVALID, 0));
-			m_myBulletList[i].setDirection(Vector2D(0, 0));
+			m_myBulletList[i].setDamage(0);
 			continue;
 		}
 		m_myBulletList[i].update(elapsedTime);
@@ -230,12 +228,9 @@ void ObjectManager::updatePlayerInfo()
 		{
 			for (int j = 0; j < MAX_BULLET; ++j)
 			{
-				if (s2cpacket.iBullet[i][j].m_pos.x == INVALID)
-				{
-					m_myBulletList[j].setPos(s2cpacket.iBullet[i][j].m_pos);
-					m_myBulletList[j].setDirection(Vector2D(0, 0));
-				}
+				m_myBulletList[j].setDamage(s2cpacket.iBullet[i][j].m_damage);
 			}
+			m_playerList[i].setState(s2cpacket.iPlayer[i].m_state);
 			--k;
 			continue;
 		}
@@ -245,12 +240,19 @@ void ObjectManager::updatePlayerInfo()
 			m_OtherBulletList[k*MAX_BULLET + j].setTeam(5);	//???????
 			m_OtherBulletList[k*MAX_BULLET + j].setPos(s2cpacket.iBullet[i][j].m_pos);
 		}
-		//printf("%f,%f\n", m_playerList[i].getPos().x, m_playerList[i].getPos().y);
+	}
+	for (int i = 0; i < MAX_ITEM; ++i)
+	{
+		m_itemList[i].setPos(s2cpacket.iItem[i].m_pos);
 	}
 	c2spacket.player.m_pos = m_playerList[m_myTeamNo].getPos();
 	c2spacket.player.m_hp = m_playerList[m_myTeamNo].getHp();
+	c2spacket.player.m_state = m_playerList[m_myTeamNo].getState();
 	for (int i = 0; i < MAX_BULLET; ++i)
+	{
 		c2spacket.Bullets[i].m_pos = m_myBulletList[i].getPos();
+		c2spacket.Bullets[i].m_damage = m_myBulletList[i].getDamage();
+	}
 	
 }
 
@@ -258,7 +260,11 @@ void ObjectManager::updatePlayerInfoFirst()
 {
 	c2spacket.player.m_pos = m_playerList[m_myTeamNo].getPos();
 	c2spacket.player.m_hp = m_playerList[m_myTeamNo].getHp();
+	c2spacket.player.m_state = m_playerList[m_myTeamNo].getState();
 	for (int i = 0; i < MAX_BULLET; ++i)
+	{
 		c2spacket.Bullets[i].m_pos = m_myBulletList[i].getPos();
+		c2spacket.Bullets[i].m_damage = m_myBulletList[i].getDamage();
+	}
 }
 
