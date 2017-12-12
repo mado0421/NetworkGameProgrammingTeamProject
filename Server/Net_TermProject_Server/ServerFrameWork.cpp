@@ -59,36 +59,32 @@ void ServerFrameWork::InitRoom(int roomIndex)
 		hCommunicated[roomIndex][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
 		hSendPacket[roomIndex][i] = CreateEvent(NULL, FALSE, FALSE, NULL);
 	}
-
 	hGameThread[roomIndex] = CreateEvent(NULL, FALSE, FALSE, NULL);
 
-	Room_Player p[MAX_PLAYER];
-
+	Room_Player* p[MAX_PLAYER];
 	HANDLE hTmp;
-	for (int i = 0; i < MAX_PLAYER; ++i) {
-		p[i].roomNum = roomIndex;
-		p[i].playerNum = i;
-		hTmp = CreateThread(NULL, 0, CommunicationPlayer, (LPVOID)&p[i], 0, NULL);
+	for (int i = 0; i < MAX_PLAYER; ++i) 
+	{
+		p[i] = new Room_Player;
+		p[i]->roomNum = roomIndex;
+		p[i]->playerNum = i;
+	#ifdef DEBUGMODE
+		printf("room:%d / p[%d] num: %d\n",p[i]->roomNum,i, p[i]->playerNum);
+	#endif
+		hTmp = CreateThread(NULL, 0, CommunicationPlayer, (LPVOID)p[i], 0, NULL);
 		CloseHandle(hTmp);
-		//Sleep(100);
 	}
-	Sleep(100);
 	hTmp = CreateThread(NULL, 0, GameThread, (LPVOID)roomIndex, 0, NULL);
-	CloseHandle(hTmp);
-	
-	//room[roomIndex].m_roomState = Play;
+	CloseHandle(hTmp);	
 }
 
 void ServerFrameWork::GameStart(int roomIndex)
 {
-	for (int i = 0; i < MAX_PLAYER; ++i) {
+	for (int i = 0; i < MAX_PLAYER; ++i){
 		SetEvent(hSendPacket[roomIndex][i]);
-		//NOTUSESLEEP
-		//Sleep(100);
 	}
 	bOrder[roomIndex] = true;
 	m_insQueue.push(roomIndex);
-	//room[roomIndex].m_roomState = Play;
 	room[roomIndex].timeInit();
 	printf("room: %d GameStart\n", roomIndex);
 }
@@ -189,29 +185,27 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 	int roomIndex = (int)arg;
 	DWORD retEvent;
 	int retCalc;
+
 	while (true)
 	{
-		printf("게임 쓰레드 입장\n");
 		//	wait queue
 #ifdef DEBUGMODE
 		printf("[%d]before hGameThread\n",roomIndex);
 #endif
-		printf("[%d]before hGameThread\n", roomIndex);
 		WaitForSingleObject(hGameThread[roomIndex], INFINITE);
 		
 #ifdef DEBUGMODE
 		printf("[%d]after hGameThread\n", roomIndex);
 #endif
-		printf("[%d]after hGameThread\n", roomIndex);
 		//	wait Communication
 #ifdef DEBUGMODE
 		printf("[%d]before hCommunicated\n", roomIndex);
 #endif
 		retEvent = WaitForMultipleObjects(MAX_PLAYER, hCommunicated[roomIndex], TRUE, INFINITE);	
-		printf("wait종료\n");
 #ifdef DEBUGMODE
 		printf("[%d]after hCommunicated\n", roomIndex);
 #endif
+
 #ifdef FIXFREQUENCY
 		//	Fix FrameRate with THREADFREQ
 		FixFrame(roomIndex);
@@ -249,16 +243,8 @@ DWORD ServerFrameWork::CommunicationPlayer(LPVOID arg)
 	int playerID = index->playerNum, roomIndex = index->roomNum;
 	int retval;
 	DWORD retEvent;
-	if (playerID < 0 || playerID >= MAX_PLAYER)
-	{
-		printf("playerID Error\n");
-		return 0;
-	}
-	if (roomIndex < 0 || roomIndex >= MAXROOMCOUNT)
-	{
-		printf("roomIndex Error\n");
-		return 0;
-	}
+	
+	delete arg;
 	while (true) 
 	{
 #ifdef DEBUGMODE

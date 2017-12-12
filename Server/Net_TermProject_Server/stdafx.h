@@ -20,7 +20,8 @@
 #include<queue>
 #include<algorithm>
 using namespace std;
-//Room 구조체 전역변수 예정
+
+#define SERVERPORT 9000
 
 #define MAX_BULLET 18
 #define MAX_PLAYER 4
@@ -104,6 +105,10 @@ inline void DestroyBullet(InfoBullet* bullet)
 	bullet->m_pos.x = NOTEXIST;
 }
 
+enum {
+	empty=0,medikit, reinforce
+};
+
 struct InfoItem {
 	Vector2D m_pos;
 	int m_type;
@@ -114,7 +119,6 @@ struct InfoTeam {
 	InfoPlayer m_player;
 	InfoBullet m_bullets[MAX_BULLET];
 };
-
 
 #define TeamList(RoomIndex,PlayerIndex) room[RoomIndex].m_teamList[PlayerIndex]
 

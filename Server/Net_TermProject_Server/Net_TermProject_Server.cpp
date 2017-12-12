@@ -32,7 +32,7 @@ void err_display(char *msg)
 }
 
 ServerFrameWork g_server;
-#define SERVERPORT 9000
+
 int main()
 {
 	int retval;
@@ -84,14 +84,10 @@ int main()
 			if (g_server.isGameReady(roomIndex))break;
 		}
 		g_server.InitRoom(roomIndex);
-
-		Sleep(100);
 		g_server.GameStart(roomIndex);
-
 	}
-
-	
 	printf("exit\n");
 	closesocket(listen_sock);
 	WSACleanup();
+	return 0;
 }
