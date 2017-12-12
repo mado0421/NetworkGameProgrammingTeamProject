@@ -140,7 +140,7 @@ bool TitleScene::accessLobby()
 	// connet()
 	ZeroMemory(&m_networkData->serveraddr, sizeof(m_networkData->serveraddr));
 	m_networkData->serveraddr.sin_family = AF_INET;
-	m_networkData->serveraddr.sin_addr.s_addr = inet_addr(m_aIpAddr);
+	m_networkData->serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	m_networkData->serveraddr.sin_port = htons(SERVERPORT);
 	retval = connect(m_networkData->sock, (SOCKADDR *)&m_networkData->serveraddr, sizeof(m_networkData->serveraddr));
 	if (retval == SOCKET_ERROR) return false;

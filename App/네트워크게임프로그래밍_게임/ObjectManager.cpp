@@ -216,6 +216,37 @@ void ObjectManager::render()
 //	for (auto p = m_itemList.cbegin(); p != m_itemList.cend(); ++p) p->render();
 	for (auto p = m_tileList.cbegin(); p != m_tileList.cend(); ++p) p->render();
 
+
+	/*remain ammo*/
+	m_pTexture->render(0, 200, 600, 800, tex::etc, 4, 4, 2, 2);
+	switch (m_playerList[m_myTeamNo].getAmmo())
+	{
+	case 6:
+		m_pTexture->render(116, 166, 675, 725, tex::etc, 16, 16, 12, 8);
+	case 5:
+		m_pTexture->render(95, 145, 711, 761, tex::etc, 16, 16, 12, 8);
+	case 4:
+		m_pTexture->render(52, 102, 711, 761, tex::etc, 16, 16, 12, 8);
+	case 3:
+		m_pTexture->render(32, 82, 675, 725, tex::etc, 16, 16, 12, 8);
+	case 2:
+		m_pTexture->render(52, 102, 638, 688, tex::etc, 16, 16, 12, 8);
+	case 1:
+		m_pTexture->render(95, 145, 638, 688, tex::etc, 16, 16, 12, 8);
+		break;
+	case 0:
+		m_pTexture->render(75, 125, 600, 800, tex::etc, 4, 16, 1, 9);
+		break;
+	default:
+		break;
+	}
+
+	/*remain HP*/
+	m_pTexture->render(700, 800, 0, 200, tex::etc, 8, 16, 4, 12);
+	if (m_playerList[m_myTeamNo].getHp())
+		m_pTexture->render(700, 800, 200, 400, tex::etc, 8, 16, 5 + (3 - m_playerList[0].getHp()), 12);
+
+
 }
 
 void ObjectManager::updatePlayerInfo()
