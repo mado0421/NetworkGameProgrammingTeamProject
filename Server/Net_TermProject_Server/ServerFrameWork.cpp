@@ -235,12 +235,14 @@ DWORD ServerFrameWork::GameThread(LPVOID arg)
 		// ItemGen
 		if (isItemCooltime(timeGen))
 		{
-			for (int i = 0; i < MAX_ITEM; ++i)
-			{
-				if (room[roomIndex].m_itemList[i].m_type == notExist)
+			if (!m_map.empty()) {
+				for (int i = 0; i < MAX_ITEM; ++i)
 				{
-					room[roomIndex].m_itemList[i].m_type = rand() % 2 + 1;
-					room[roomIndex].m_itemList[i].m_pos = m_map[i].m_pos;
+					if (room[roomIndex].m_itemList[i].m_type == notExist)
+					{
+						room[roomIndex].m_itemList[i].m_type = rand() % 2 + 1;
+						room[roomIndex].m_itemList[i].m_pos = m_map[i].m_pos;
+					}
 				}
 			}
 		}
