@@ -154,8 +154,7 @@ struct BuffInfo
 	{
 		occurTime = chrono::system_clock::now();
 	}
-	BuffInfo(int ri,int pid,float d, 
-		chrono::system_clock::time_point t):
+	BuffInfo(int ri,int pid,float d,chrono::system_clock::time_point t):
 		roomIndex(ri),PlayerID(pid),duration(d),occurTime(t) {}
 	bool endcheck(chrono::system_clock::time_point& other)
 	{
@@ -231,7 +230,7 @@ struct Room
 	// Room에 접속해있는 현재 인원
 	int m_numOfPlayerInRoom;
 
-	std::queue<BuffInfo> m_buffQueue;
+	//std::queue<BuffInfo> m_buffQueue;
 
 	// 준혁 - 시간체크용 tmp;
 	double m_ElapsedTime = 0;
@@ -333,14 +332,26 @@ struct S2CPacket
 	{
 		InfoTeam iTeam[MAX_PLAYER];
 		memcpy(&iTeam, &(room.m_teamList), sizeof(InfoTeam)*MAX_PLAYER);
-
 		for (int i = 0; i < MAX_PLAYER; ++i)
 		{
 			memcpy(&iPlayer[i], &iTeam[i].m_player, sizeof(InfoPlayer));
 			memcpy(&iBullet[i], &iTeam[i].m_bullets, sizeof(InfoBullet)*MAX_BULLET);
-			memcpy(&iItem[i], &room.m_itemList, sizeof(InfoItem)*MAX_ITEM);
 		}
+		memcpy(&iItem, &room.m_itemList, sizeof(InfoItem)*MAX_ITEM);
 	};
+	void printPacket()const
+	{
+		printf("Message %d\n", Message);
+		for (int i = 0; i < MAX_PLAYER; ++i)
+		{
+			printf("[%d] hp:%d state:%d\n", i,iPlayer[i].m_hp, iPlayer[i].m_state);
+		}
+		for (int i = 0; i < MAX_ITEM; ++i)
+		{
+			printf("[%d] (%d, %d) state: %d\n", i,iItem[i].m_pos.x, iItem[i].m_pos.y, iItem[i].m_type);
+		}
+
+	}
 };
 
 struct C2SPacket 
