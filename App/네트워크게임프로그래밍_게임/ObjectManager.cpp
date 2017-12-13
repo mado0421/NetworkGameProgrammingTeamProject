@@ -61,10 +61,13 @@ void ObjectManager::initialize(int team)
 	
 	for (int i = 0; i < MAX_BULLET; ++i)
 	{
-		m_myBulletList[i].setPos(Vector2D(INVALID, 0));
+		m_myBulletList[i].setPos(Vector2D(0, 0));
 		m_myBulletList[i].setDirection(Vector2D(0, 0));
 		m_myBulletList[i].setTexture(m_pTexture);
 		m_myBulletList[i].setDamage(0);
+		m_myBulletList[i].setSize(2.5f);
+		m_myBulletList[i].setHp(1);
+		m_myBulletList[i].setTexture(m_pTexture);
 	}
 	for (int i = 0; i < MAX_BULLET * 3; ++i)
 	{
@@ -275,7 +278,8 @@ void ObjectManager::updatePlayerInfo()
 		{
 			for (int j = 0; j < MAX_BULLET; ++j)
 			{
-				m_myBulletList[j].setDamage(s2cpacket.iBullet[i][j].m_damage);
+				if(m_myBulletList[j].getDamage()!=0)
+					m_myBulletList[j].setDamage(s2cpacket.iBullet[i][j].m_damage);
 			}
 			m_playerList[i].setState(s2cpacket.iPlayer[i].m_state);
 			--k;
