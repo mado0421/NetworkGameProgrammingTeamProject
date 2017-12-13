@@ -562,7 +562,6 @@ void PlayScene::update(float elapsedTime)
 void PlayScene::render()
 {
 	m_objMng->render();
-	WaitForSingleObject(hUpdateEvent, 1000);
 }
 
 void PlayScene::mouseInput(int button, int state, int x, int y)
