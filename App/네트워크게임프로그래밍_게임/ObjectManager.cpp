@@ -263,7 +263,7 @@ void ObjectManager::render()
 
 	/*remain HP*/
 	m_pTexture->render(700, 800, 0, 200, tex::etc, 8, 16, 4, 12);
-	if (m_playerList[m_myTeamNo].getHp())
+	if (m_playerList[m_myTeamNo].getHp() > 0)
 		m_pTexture->render(700, 800, 200, 400, tex::etc, 8, 16, 5 + (3 - m_playerList[m_myTeamNo].getHp()), 12);
 
 

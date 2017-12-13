@@ -158,11 +158,11 @@ void Bullet::render() const
 {
 	glPushMatrix();
 	m_pTexture->render(
-		WWIDTH*0.9,
-		WWIDTH*0.9,
-		WWIDTH*0.9,
-		WWIDTH*0.9,
-		tex::etc, 16, 16, 9 + m_team*0.2, 0);
+		m_pos.y - BULLETSIZE*4,
+		m_pos.y + BULLETSIZE*4,
+		m_pos.x - BULLETSIZE*4,
+		m_pos.x + BULLETSIZE*4,
+		tex::etc, 16, 16, 9+m_team*0.2, 0);
 	glPopMatrix();
 }
 
